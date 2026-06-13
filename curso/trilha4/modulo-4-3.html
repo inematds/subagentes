@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comparando modelos por papel | Subagentes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#FACC15',
+            dark: { 900: '#111827', 800: '#1f2937', 700: '#374151', 600: '#4b5563' }
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .dark body { background-color: #111827; }
+    .topic-explanation { display: none; }
+    .topic-explanation.active { display: block; }
+
+    /* Light mode overrides - OBRIGATORIO (base) */
+    html:not(.dark) body { background-color: #f8fafc; }
+    html:not(.dark) .bg-dark-900 { background-color: #ffffff; }
+    html:not(.dark) .bg-dark-800 { background-color: #f9fafb; }
+    html:not(.dark) .bg-dark-700 { background-color: #f3f4f6; }
+    html:not(.dark) .bg-dark-600 { background-color: #e5e7eb; }
+    html:not(.dark) .text-neutral-100 { color: #111827; }
+    html:not(.dark) .text-neutral-300 { color: #4b5563; }
+    html:not(.dark) .text-neutral-400 { color: #6b7280; }
+    html:not(.dark) .text-neutral-500 { color: #9ca3af; }
+    html:not(.dark) .border-dark-600 { border-color: #d1d5db; }
+    html:not(.dark) .border-dark-700 { border-color: #e5e7eb; }
+
+    /* Light mode - cores de acento (trilha purple T4) */
+    html:not(.dark) .text-purple-400 { color: #9333ea; }
+    html:not(.dark) .bg-purple-500\/20 { background-color: rgba(147, 51, 234, 0.12); }
+    html:not(.dark) .bg-purple-500\/10 { background-color: rgba(147, 51, 234, 0.08); }
+    html:not(.dark) .border-purple-500\/30 { border-color: rgba(147, 51, 234, 0.25); }
+    html:not(.dark) .hover\:bg-purple-500\/30:hover { background-color: rgba(147, 51, 234, 0.18); }
+    html:not(.dark) .hover\:text-purple-400:hover { color: #9333ea; }
+    html:not(.dark) .hover\:bg-purple-500\/10:hover { background-color: rgba(147, 51, 234, 0.08); }
+    html:not(.dark) .bg-purple-900\/20 { background-color: rgba(147, 51, 234, 0.08); }
+    html:not(.dark) .bg-purple-600 { background-color: #9333ea; }
+    html:not(.dark) .hover\:bg-purple-500:hover { background-color: #a855f7; }
+
+    /* Light mode - cores de apoio usadas nos boxes (blue dados / red erros / cyan secundaria) */
+    html:not(.dark) .text-blue-400 { color: #2563eb; }
+    html:not(.dark) .bg-blue-900\/20 { background-color: rgba(37, 99, 235, 0.08); }
+    html:not(.dark) .border-blue-500\/30 { border-color: rgba(37, 99, 235, 0.25); }
+    html:not(.dark) .text-red-400 { color: #dc2626; }
+    html:not(.dark) .bg-red-900\/20 { background-color: rgba(220, 38, 38, 0.08); }
+    html:not(.dark) .border-red-500\/30 { border-color: rgba(220, 38, 38, 0.25); }
+    html:not(.dark) .text-cyan-400 { color: #0891b2; }
+    html:not(.dark) .bg-cyan-900\/20 { background-color: rgba(8, 145, 178, 0.08); }
+    html:not(.dark) .border-cyan-500\/30 { border-color: rgba(8, 145, 178, 0.25); }
+    html:not(.dark) .text-amber-400 { color: #b45309; }
+    html:not(.dark) .bg-amber-900\/20 { background-color: rgba(180, 83, 9, 0.08); }
+    html:not(.dark) .border-amber-500\/30 { border-color: rgba(180, 83, 9, 0.25); }
+    html:not(.dark) .text-emerald-400 { color: #059669; }
+
+    /* Light mode - remove gradientes (fundo uniforme) */
+    html:not(.dark) [class*="bg-gradient-to"] { background-image: none !important; }
+
+    /* Light mode - cores especiais */
+    html:not(.dark) .text-primary { color: #a16207; }
+    html:not(.dark) .bg-primary\/10 { background-color: rgba(161, 98, 7, 0.08); }
+    html:not(.dark) .border-primary\/30 { border-color: rgba(161, 98, 7, 0.25); }
+    html:not(.dark) .border-primary\/40 { border-color: rgba(161, 98, 7, 0.25); }
+    html:not(.dark) .text-sky-400 { color: #0369a1; }
+    html:not(.dark) .text-yellow-400 { color: #a16207; }
+    html:not(.dark) .hover\:text-sky-300:hover { color: #0284c7; }
+    html:not(.dark) .hover\:text-yellow-300:hover { color: #854d0e; }
+
+    /* Light mode - nav */
+    html:not(.dark) .bg-dark-900\/95 { background-color: rgba(255, 255, 255, 0.95); }
+
+    /* Light mode - tabela matriz */
+    html:not(.dark) .matrix-th { background-color: #f3f4f6; }
+    html:not(.dark) .matrix-row-head { background-color: #faf5ff; }
+
+    /* Light mode - diagramas SVG menos neon */
+    html:not(.dark) svg[role="img"] { filter: saturate(0.82) brightness(0.96); }
+
+    /* Dark mode - bordas e linhas divisorias mais suaves (OBRIGATORIO) */
+    .dark .border-dark-600 { border-color: #374151; }
+    .dark .divide-dark-600 > :not([hidden]) ~ :not([hidden]) { border-color: #374151; }
+
+    /* Pulso dos agentes nos diagramas (apenas se o usuario permitir movimento) */
+    @keyframes wf-pulse { 0%,100% { opacity:.55 } 50% { opacity:1 } }
+    @keyframes wf-bar { from { transform: translateX(-6%); } to { transform: translateX(0); } }
+    @media (prefers-reduced-motion: no-preference) {
+      .wf-a { animation: wf-pulse 2.6s ease-in-out infinite; }
+      .wf-a:nth-child(2){animation-delay:.2s} .wf-a:nth-child(3){animation-delay:.4s}
+      .wf-a:nth-child(4){animation-delay:.6s} .wf-a:nth-child(5){animation-delay:.8s}
+      .barfill { animation: wf-bar 3s ease-in-out infinite alternate; }
+      .barfill.b2{animation-delay:.5s} .barfill.b3{animation-delay:1s} .barfill.b4{animation-delay:1.4s} .barfill.b5{animation-delay:1.8s}
+    }
+  </style>
+</head>
+<body class="bg-dark-900 text-neutral-100 min-h-screen">
+
+  <!-- NAVIGATION -->
+  <nav class="sticky top-0 z-50 bg-dark-900/95 backdrop-blur-sm border-b border-dark-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-14">
+        <!-- Logo + INEMA.CLUB -->
+        <div class="flex items-center space-x-4">
+          <a href="../../index.html" class="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300">
+            <span class="text-2xl">🤖</span>
+            <span class="font-bold text-lg hidden sm:inline">Subagentes</span>
+          </a>
+          <span class="text-neutral-600">|</span>
+          <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 text-sm font-medium">INEMA.CLUB</a>
+        </div>
+
+        <!-- Trilhas + Theme Toggle -->
+        <div class="flex items-center space-x-1 sm:space-x-2">
+          <!-- Trilha 1 -->
+          <a href="../trilha1/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
+            <span class="sm:hidden">T1</span>
+            <span class="hidden sm:inline">Fundamentos</span>
+          </a>
+          <!-- Trilha 2 -->
+          <a href="../trilha2/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
+            <span class="sm:hidden">T2</span>
+            <span class="hidden sm:inline">Na prática</span>
+          </a>
+          <!-- Trilha 3 -->
+          <a href="../trilha3/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+            <span class="sm:hidden">T3</span>
+            <span class="hidden sm:inline">Orquestração</span>
+          </a>
+          <!-- Trilha 4 (ativa) -->
+          <a href="index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-purple-400 bg-purple-500/10">
+            <span class="sm:hidden">T4</span>
+            <span class="hidden sm:inline">Avançado</span>
+          </a>
+
+          <!-- Theme Toggle -->
+          <button id="theme-toggle" class="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 transition-colors ml-2">
+            <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+            </svg>
+            <svg id="theme-toggle-light-icon" class="hidden w-5 h-5 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- BREADCRUMB -->
+  <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div class="flex items-center space-x-2 text-sm text-neutral-400">
+      <a href="../../index.html" class="hover:text-purple-400">Início</a>
+      <span>/</span>
+      <a href="index.html" class="hover:text-purple-400">Trilha 4</a>
+      <span>/</span>
+      <span class="text-purple-400">Módulo 4.3</span>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <header class="bg-gradient-to-br from-purple-900/30 via-dark-800 to-dark-800 py-12 border-b border-dark-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <span class="inline-block px-3 py-1 bg-purple-500/20 text-purple-400 text-xs font-semibold rounded-full mb-4">
+        MÓDULO 4.3 · Trilha 4 · Avançado &amp; cross-ambiente
+      </span>
+      <h1 class="text-2xl sm:text-3xl font-bold mb-4">🎛️ Comparando modelos por papel</h1>
+      <p class="text-lg text-neutral-400 max-w-3xl">
+        Cada papel da frota pede um cérebro diferente. Quem só <strong class="text-purple-400">escaneia</strong> arquivos não precisa
+        do mesmo motor de quem <strong class="text-purple-400">decide arquitetura</strong>. Você vai aprender a montar uma
+        <strong class="text-purple-400">matriz papel × modelo</strong> e a equilibrar o triângulo de ferro:
+        <strong class="text-purple-400">custo · latência · qualidade</strong>.
+      </p>
+
+      <!-- Stats Banner -->
+      <div class="grid grid-cols-4 gap-4 mt-8 max-w-2xl">
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-purple-400">6</div>
+          <div class="text-xs text-neutral-400">Tópicos</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-purple-400">~30</div>
+          <div class="text-xs text-neutral-400">Minutos</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-purple-400">Avançado</div>
+          <div class="text-xs text-neutral-400">Nível</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-purple-400">Estratégia</div>
+          <div class="text-xs text-neutral-400">Tipo</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEUDO -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <!-- ABERTURA + SVG MATRIZ (DESTAQUE) -->
+    <section class="mb-12">
+      <p class="text-neutral-300 mb-8 leading-relaxed max-w-3xl">
+        Imagine uma <strong class="text-purple-400">oficina mecânica</strong>. Você não usa a chave de impacto pneumática para apertar
+        um parafuso de óculos, nem uma chave de fenda para soltar a roda de um caminhão. Cada serviço tem a ferramenta certa — e usar a
+        cara demais é desperdício, usar a fraca demais é retrabalho. Com uma <strong class="text-purple-400">frota de subagentes</strong>
+        é igual: o papel do agente decide o modelo. Quem <strong class="text-purple-400">escaneia</strong> 200 arquivos quer velocidade e
+        baixo custo; quem <strong class="text-purple-400">raciocina</strong> sobre uma decisão irreversível quer o motor mais forte. O
+        mapa abaixo é o coração deste módulo: uma <strong class="text-purple-400">matriz papel × modelo</strong>.
+      </p>
+
+      <div class="rounded-2xl border border-purple-500/30 bg-dark-900/40 p-3 sm:p-4 mb-2 overflow-hidden">
+        <svg viewBox="0 0 1000 420" class="w-full h-auto" role="img" aria-label="Matriz papel por modelo: seis papéis nas linhas (escanear, buscar, construir, revisar, raciocínio, segurança) e quatro modelos nas colunas (Haiku, Sonnet, Opus, GPT/Codex). Cada célula marcada mostra a combinação recomendada; raciocínio e segurança caem em Opus, escanear e buscar caem em Haiku.">
+          <defs>
+            <linearGradient id="m43-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#c084fc"/><stop offset="1" stop-color="#a855f7"/>
+            </linearGradient>
+            <filter id="m43-glow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <pattern id="m43-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+              <circle cx="1.3" cy="1.3" r="1.3" fill="#a855f7" opacity="0.12"/>
+            </pattern>
+          </defs>
+          <rect x="0" y="0" width="1000" height="420" fill="url(#m43-grid)"/>
+
+          <!-- cabeçalhos de coluna (modelos) -->
+          <g font-family="Inter,sans-serif" font-size="14" font-weight="600" text-anchor="middle">
+            <text x="430" y="40" fill="#38bdf8">Haiku</text>
+            <text x="430" y="56" fill="#7fc8ef" font-size="10.5" font-weight="400">barato · rápido</text>
+            <text x="590" y="40" fill="#c084fc">Sonnet</text>
+            <text x="590" y="56" fill="#d8b4fe" font-size="10.5" font-weight="400">equilíbrio</text>
+            <text x="750" y="40" fill="#c084fc">Opus</text>
+            <text x="750" y="56" fill="#d8b4fe" font-size="10.5" font-weight="400">raciocínio</text>
+            <text x="910" y="40" fill="#9ca3af">GPT/Codex</text>
+            <text x="910" y="56" fill="#c8cdd6" font-size="10.5" font-weight="400">2º olhar</text>
+          </g>
+
+          <!-- linhas-guia da grade -->
+          <g stroke="#4b5563" stroke-width="1" opacity="0.35">
+            <line x1="350" y1="70" x2="990" y2="70"/>
+            <line x1="350" y1="124" x2="990" y2="124"/>
+            <line x1="350" y1="178" x2="990" y2="178"/>
+            <line x1="350" y1="232" x2="990" y2="232"/>
+            <line x1="350" y1="286" x2="990" y2="286"/>
+            <line x1="350" y1="340" x2="990" y2="340"/>
+            <line x1="350" y1="394" x2="990" y2="394"/>
+            <line x1="350" y1="70" x2="350" y2="394"/>
+            <line x1="510" y1="70" x2="510" y2="394"/>
+            <line x1="670" y1="70" x2="670" y2="394"/>
+            <line x1="830" y1="70" x2="830" y2="394"/>
+            <line x1="990" y1="70" x2="990" y2="394"/>
+          </g>
+
+          <!-- rótulos de linha (papéis) -->
+          <g font-family="Inter,sans-serif" font-size="13.5" font-weight="600" text-anchor="end" fill="#e9d5ff">
+            <text x="332" y="102">🔍 escanear</text>
+            <text x="332" y="156">🧭 buscar</text>
+            <text x="332" y="210">🔨 construir</text>
+            <text x="332" y="264">🔎 revisar</text>
+            <text x="332" y="318">🧠 raciocínio</text>
+            <text x="332" y="372">🛡️ segurança</text>
+          </g>
+
+          <!-- células recomendadas (pílulas) -->
+          <g font-family="Inter,sans-serif" font-size="11" font-weight="600" text-anchor="middle">
+            <!-- escanear -> Haiku -->
+            <rect x="386" y="83" width="88" height="30" rx="8" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="430" y="102" fill="#bfe6ff">ideal</text>
+            <!-- buscar -> Haiku -->
+            <rect x="386" y="137" width="88" height="30" rx="8" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="430" y="156" fill="#bfe6ff">ideal</text>
+            <!-- construir -> Sonnet (foco) -->
+            <g filter="url(#m43-glow)"><rect x="546" y="191" width="88" height="30" rx="8" fill="#1a1230" stroke="url(#m43-grad)" stroke-width="2.4"/></g><text x="590" y="210" fill="#e9d5ff">ideal</text>
+            <!-- revisar -> Sonnet -->
+            <rect x="546" y="245" width="88" height="30" rx="8" fill="#1a1230" stroke="#c084fc" stroke-width="2"/><text x="590" y="264" fill="#e9d5ff">ideal</text>
+            <!-- revisar -> GPT/Codex (2o olhar) -->
+            <rect x="866" y="245" width="88" height="30" rx="8" fill="#1a1512" stroke="#9ca3af" stroke-width="1.6" stroke-dasharray="4 3"/><text x="910" y="264" fill="#d6dae0">2º olhar</text>
+            <!-- raciocínio -> Opus (foco) -->
+            <g filter="url(#m43-glow)"><rect x="706" y="299" width="88" height="30" rx="8" fill="#1a1230" stroke="url(#m43-grad)" stroke-width="2.4"/></g><text x="750" y="318" fill="#e9d5ff">ideal</text>
+            <!-- segurança -> Opus -->
+            <rect x="706" y="353" width="88" height="30" rx="8" fill="#1a1230" stroke="#c084fc" stroke-width="2"/><text x="750" y="372" fill="#e9d5ff">ideal</text>
+            <!-- segurança -> GPT/Codex (cross-check) -->
+            <rect x="866" y="353" width="88" height="30" rx="8" fill="#1a1512" stroke="#9ca3af" stroke-width="1.6" stroke-dasharray="4 3"/><text x="910" y="372" fill="#d6dae0">cross</text>
+          </g>
+
+          <!-- seta da diagonal "barato->caro" -->
+          <text x="170" y="406" fill="#9ca3af" font-family="Inter,sans-serif" font-size="11" font-style="italic">papéis simples ↑ · papéis críticos ↓ → motor mais forte →</text>
+        </svg>
+      </div>
+      <p class="text-xs text-neutral-500 mb-0">↑ A matriz papel × modelo: cada papel cai na coluna do motor certo. Pílula em destaque = padrão recomendado; tracejada = 2º olhar de outro provedor.</p>
+    </section>
+
+    <!-- DIVISOR -->
+    <h2 class="text-2xl font-bold mb-6">Conteúdo detalhado</h2>
+
+    <!-- TÓPICO 1 — Opus / Sonnet / Haiku por papel -->
+    <section id="topico-1" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">1</span>
+        <h2 class="text-2xl font-bold">🪜 Opus, Sonnet e Haiku — uma escada de papéis</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        A família Claude vem em três tamanhos, e cada um tem um ponto doce. <strong class="text-purple-400">Haiku</strong> é o operário
+        veloz: escaneia, busca, resume, lê documentação. <strong class="text-purple-400">Sonnet</strong> é o profissional do dia a dia:
+        constrói código e revisa. <strong class="text-purple-400">Opus</strong> é o arquiteto: raciocina sobre decisões difíceis,
+        analisa segurança, pensa fundo. Não é "Opus é melhor logo uso Opus em tudo" — é "o papel pede tal motor".
+      </p>
+
+      <div class="bg-gradient-to-br from-purple-900/30 to-dark-800 rounded-xl border border-purple-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-purple-400 mb-4 flex items-center">
+          <span class="mr-2">🔧</span> A regra da oficina
+        </h3>
+        <p class="text-neutral-300 mb-4">
+          O motor certo é o <strong>mais barato que ainda dá conta do papel</strong>. Subir de modelo sem necessidade é queimar
+          dinheiro e tempo; descer demais é receber trabalho ruim. Pense em três faixas:
+        </p>
+        <ul class="space-y-2 text-neutral-300">
+          <li class="flex items-start space-x-2"><span class="text-purple-400 mt-1">•</span><span><strong>Haiku</strong> — papéis mecânicos e volumosos: varrer, grep, listar, resumir docs longos.</span></li>
+          <li class="flex items-start space-x-2"><span class="text-purple-400 mt-1">•</span><span><strong>Sonnet</strong> — papéis de ofício: escrever código, refatorar, revisar um diff, gerar testes.</span></li>
+          <li class="flex items-start space-x-2"><span class="text-purple-400 mt-1">•</span><span><strong>Opus</strong> — papéis de juízo: arquitetura, segurança, decisões irreversíveis, planos complexos.</span></li>
+        </ul>
+      </div>
+
+      <!-- 3 SECOES OBRIGATORIAS -->
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3 mb-6">
+        <div>
+          <span class="text-purple-400 font-semibold">O que é:</span>
+          <p class="text-neutral-300 text-sm">Os três níveis da família Claude organizados por <em>papel</em>, não por "qual é o melhor". Cada nível troca custo e latência por profundidade de raciocínio.</p>
+        </div>
+        <div>
+          <span class="text-purple-400 font-semibold">Por que aprender:</span>
+          <p class="text-neutral-300 text-sm">Frota inteira em Opus estoura o orçamento e fica lenta; frota inteira em Haiku entrega análise rasa onde precisava de juízo. A escada evita os dois extremos.</p>
+        </div>
+        <div>
+          <span class="text-purple-400 font-semibold">Conceitos-chave:</span>
+          <p class="text-neutral-300 text-sm">Papel × motor · "o mais barato que dá conta" · escada Haiku → Sonnet → Opus.</p>
+        </div>
+      </div>
+
+      <!-- Conceitos-chave: 3 mini-cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="bg-dark-800 rounded-lg p-4 border border-dark-600 text-center"><div class="text-2xl mb-1">⚡</div><div class="text-sm font-semibold text-purple-400">Haiku</div><div class="text-xs text-neutral-400">escanear · buscar · resumir</div></div>
+        <div class="bg-dark-800 rounded-lg p-4 border border-dark-600 text-center"><div class="text-2xl mb-1">🔨</div><div class="text-sm font-semibold text-purple-400">Sonnet</div><div class="text-xs text-neutral-400">construir · revisar</div></div>
+        <div class="bg-dark-800 rounded-lg p-4 border border-dark-600 text-center"><div class="text-2xl mb-1">🧠</div><div class="text-sm font-semibold text-purple-400">Opus</div><div class="text-xs text-neutral-400">raciocínio · segurança</div></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 2 — GPT / Codex -->
+    <section id="topico-2" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">2</span>
+        <h2 class="text-2xl font-bold">🔀 GPT e Codex — o segundo provedor</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        A frota não precisa ser de uma família só. Os modelos <strong class="text-purple-400">GPT</strong> e o ambiente
+        <strong class="text-purple-400">Codex</strong> (CLI da OpenAI, visto no módulo 4.2) entram como um
+        <strong class="text-purple-400">segundo olhar</strong>: um revisor que pensa diferente do construtor. Famílias distintas
+        erram de jeitos distintos — então um achado que <em>dois</em> provedores confirmam é bem mais confiável.
+      </p>
+
+      <!-- CODE BOX: invocar com outro provedor -->
+      <div class="bg-dark-800 rounded-xl border border-dark-600 p-6 mb-6">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs uppercase tracking-wide text-neutral-500">no seu chat</span>
+          <span class="text-xs text-purple-400">2º olhar cross-provedor</span>
+        </div>
+        <pre class="font-mono text-sm text-neutral-300 overflow-x-auto leading-relaxed"><code><span class="text-purple-400">você &gt;</span> O Sonnet acabou de escrever este módulo de auth.
+        Peça a um revisor em <span class="text-cyan-400">GPT/Codex</span> pra refutar:
+        onde isso quebra? Só os furos, sem reescrever.
+
+<span class="text-neutral-500"># construtor (Sonnet) e revisor (outra família) erram</span>
+<span class="text-neutral-500"># de formas diferentes — a divergência é o valor.</span>
+<span class="text-neutral-500"># o que os DOIS apontam é o que merece atenção.</span></code></pre>
+      </div>
+
+      <div class="bg-cyan-900/20 rounded-xl border border-cyan-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-cyan-400 mb-3 flex items-center"><span class="mr-2">🛰️</span> Por que misturar provedores</h3>
+        <p class="text-neutral-300">Um <strong>viés compartilhado</strong> é o inimigo: se construtor e revisor são o mesmo modelo, eles tendem a "concordar com o próprio erro". Trocar de família no papel de revisor é a forma barata de comprar independência — o tema da <strong>verificação adversarial</strong> do módulo 4.1.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-purple-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">usar modelos de outra família (GPT/Codex) em papéis específicos — tipicamente revisão e contraponto.</span></div>
+        <div><span class="text-purple-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">independência entre construtor e revisor reduz o ponto cego compartilhado e eleva a confiança no achado.</span></div>
+        <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">segundo provedor · viés compartilhado · revisor cross-família · confirmação por divergência.</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 3 — Outros provedores / mercado -->
+    <section id="topico-3" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">3</span>
+        <h2 class="text-2xl font-bold">🌐 Outros provedores — pensar por capacidade, não por marca</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Além de Anthropic e OpenAI, há um mercado inteiro — Google (Gemini), modelos abertos rodando localmente, provedores
+        especializados. O erro é decorar nomes; o certo é pensar por <strong class="text-purple-400">capacidade</strong>. Para a sua
+        matriz, todo modelo cai numa de três <strong class="text-purple-400">classes</strong>, e você encaixa o papel na classe — não
+        na marca da semana.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+          <div class="text-2xl mb-2">🏎️</div>
+          <h4 class="font-semibold text-purple-400 mb-1">Classe "rápido &amp; barato"</h4>
+          <p class="text-xs text-neutral-400 mb-2">Haiku · modelos pequenos/locais</p>
+          <p class="text-neutral-300 text-sm">Alto volume, baixa exigência de juízo: varrer, classificar, extrair, resumir.</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+          <div class="text-2xl mb-2">⚖️</div>
+          <h4 class="font-semibold text-purple-400 mb-1">Classe "equilíbrio"</h4>
+          <p class="text-xs text-neutral-400 mb-2">Sonnet · GPT de uso geral · Gemini Pro</p>
+          <p class="text-neutral-300 text-sm">O cavalo de batalha: construir, revisar, a maioria das tarefas de ofício.</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+          <div class="text-2xl mb-2">🏛️</div>
+          <h4 class="font-semibold text-purple-400 mb-1">Classe "raciocínio profundo"</h4>
+          <p class="text-xs text-neutral-400 mb-2">Opus · GPT de raciocínio · Gemini de ponta</p>
+          <p class="text-neutral-300 text-sm">Decisões caras e irreversíveis: arquitetura, segurança, planos longos.</p>
+        </div>
+      </div>
+
+      <div class="bg-amber-900/20 rounded-xl border border-amber-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-amber-400 mb-3 flex items-center"><span class="mr-2">📌</span> Pense em slots, não em nomes</h3>
+        <p class="text-neutral-300">Modelos novos saem toda hora. Se a sua matriz é por <strong>classe</strong> (rápido / equilíbrio / raciocínio), trocar o modelo de uma célula é só substituir o ocupante do slot — a arquitetura da frota não muda. Isso é o que mantém o sistema vivo por meses, não dias.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-purple-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">o universo de modelos além das duas famílias principais, organizado em três classes de capacidade.</span></div>
+        <div><span class="text-purple-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">raciocinar por classe (não por marca) deixa a frota durável: trocar de modelo vira trocar o ocupante de um slot.</span></div>
+        <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">capacidade × marca · três classes · slot substituível · durabilidade da arquitetura.</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 4 — Raciocínio profundo × barato/rápido (o tradeoff) -->
+    <section id="topico-4" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">4</span>
+        <h2 class="text-2xl font-bold">⚖️ Raciocínio profundo × barato e rápido</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Aqui está a tensão central. Modelo forte <strong class="text-purple-400">pensa mais fundo</strong>, mas custa mais e demora
+        mais. Modelo leve é <strong class="text-purple-400">barato e instantâneo</strong>, mas raso. Não existe almoço grátis: você
+        escolhe onde gastar profundidade. A pergunta operacional é simples — <em>o custo de errar este papel é alto?</em> Se for, suba.
+        Se não, desça.
+      </p>
+
+      <!-- GRID ✓/✗ #1 — quando subir / quando descer -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-purple-900/20 rounded-xl border border-purple-500/30 p-6">
+          <h4 class="font-bold text-purple-400 mb-4">↑ Suba o modelo quando…</h4>
+          <ul class="space-y-3 text-neutral-300">
+            <li class="flex items-start space-x-2"><span class="text-purple-400">↑</span><span>O erro é caro ou irreversível (segurança, dinheiro, arquitetura)</span></li>
+            <li class="flex items-start space-x-2"><span class="text-purple-400">↑</span><span>A tarefa exige juízo e síntese, não só execução</span></li>
+            <li class="flex items-start space-x-2"><span class="text-purple-400">↑</span><span>O contexto é ambíguo e precisa de interpretação fina</span></li>
+            <li class="flex items-start space-x-2"><span class="text-purple-400">↑</span><span>É um passo único e decisivo, não 200 repetições</span></li>
+          </ul>
+        </div>
+        <div class="bg-blue-900/20 rounded-xl border border-blue-500/30 p-6">
+          <h4 class="font-bold text-blue-400 mb-4">↓ Desça o modelo quando…</h4>
+          <ul class="space-y-3 text-neutral-300">
+            <li class="flex items-start space-x-2"><span class="text-blue-400">↓</span><span>A tarefa é mecânica e bem definida (grep, listar, extrair)</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400">↓</span><span>O volume é alto e cada passo é barato de checar</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400">↓</span><span>A latência importa (você espera o resultado agora)</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400">↓</span><span>Erro é fácil de detectar e corrigir depois</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- SVG: balança raciocínio x custo/latência -->
+      <div class="rounded-2xl border border-purple-500/30 bg-dark-900/40 p-3 sm:p-4 mb-6 overflow-hidden">
+        <svg viewBox="0 0 1000 220" class="w-full h-auto" role="img" aria-label="Uma balança: de um lado, raciocínio profundo (modelo forte, mais caro e mais lento); do outro, barato e rápido (modelo leve, mais raso). O ponto de equilíbrio depende do custo de errar o papel.">
+          <defs>
+            <filter id="m43b-glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <!-- haste -->
+          <line x1="500" y1="40" x2="500" y2="120" stroke="#a855f7" stroke-width="3"/>
+          <line x1="180" y1="80" x2="820" y2="80" stroke="#a855f7" stroke-width="3"/>
+          <g filter="url(#m43b-glow)"><circle cx="500" cy="34" r="10" fill="#1a1230" stroke="url(#m43-grad)" stroke-width="2.4"/></g>
+          <!-- prato esquerdo: raciocínio -->
+          <line x1="180" y1="80" x2="180" y2="120" stroke="#c084fc" stroke-width="2"/>
+          <rect x="70" y="120" width="220" height="64" rx="12" fill="#1a1230" stroke="#c084fc" stroke-width="2"/>
+          <text x="180" y="148" text-anchor="middle" fill="#e9d5ff" font-family="Inter,sans-serif" font-weight="600" font-size="15">raciocínio profundo</text>
+          <text x="180" y="170" text-anchor="middle" fill="#c8a8e8" font-family="Inter,sans-serif" font-size="12">forte · caro · lento</text>
+          <!-- prato direito: barato/rápido -->
+          <line x1="820" y1="80" x2="820" y2="120" stroke="#38bdf8" stroke-width="2"/>
+          <rect x="710" y="120" width="220" height="64" rx="12" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/>
+          <text x="820" y="148" text-anchor="middle" fill="#bfe6ff" font-family="Inter,sans-serif" font-weight="600" font-size="15">barato &amp; rápido</text>
+          <text x="820" y="170" text-anchor="middle" fill="#9ad6ff" font-family="Inter,sans-serif" font-size="12">leve · raso · instantâneo</text>
+          <!-- legenda do fiel -->
+          <text x="500" y="206" text-anchor="middle" fill="#9ca3af" font-family="Inter,sans-serif" font-size="12" font-style="italic">o fiel da balança = o custo de errar este papel</text>
+        </svg>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-purple-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">o trade-off fundamental — profundidade de raciocínio comprada com custo e latência.</span></div>
+        <div><span class="text-purple-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">toda escolha de modelo é, no fundo, decidir onde vale gastar profundidade — e a régua é o custo de errar.</span></div>
+        <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">sem almoço grátis · custo de errar · subir × descer o modelo · profundidade como recurso escasso.</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 5 — Quando trocar de modelo/provedor por papel -->
+    <section id="topico-5" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">5</span>
+        <h2 class="text-2xl font-bold">🔁 Quando trocar de modelo ou provedor por papel</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Trocar de modelo tem um preço escondido: cada subagente <strong class="text-purple-400">começa do zero</strong> e precisa reunir
+        o contexto de novo. Por isso a troca compensa em <strong class="text-purple-400">tarefas grandes</strong>, não em recados de 30
+        segundos. E há dois eixos de troca: trocar de <strong class="text-purple-400">nível</strong> (Haiku↔Sonnet↔Opus) por
+        profundidade, e trocar de <strong class="text-purple-400">provedor</strong> (Claude↔GPT) por independência.
+      </p>
+
+      <!-- TIMELINE: gatilhos de troca -->
+      <div class="space-y-6 mb-6">
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center"><span class="text-purple-400 font-bold">1</span></div>
+          <div class="flex-1 bg-dark-800 rounded-xl p-6 border border-dark-600">
+            <h4 class="font-semibold text-white mb-2">O papel mudou de natureza</h4>
+            <p class="text-sm text-neutral-400 mb-3">De executar para decidir (ou vice-versa).</p>
+            <p class="text-neutral-300 text-sm">O agente que <em>varria</em> agora precisa <em>concluir</em> qual caminho seguir. Subiu de "execução" para "juízo" → suba o modelo.</p>
+          </div>
+        </div>
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center"><span class="text-purple-400 font-bold">2</span></div>
+          <div class="flex-1 bg-dark-800 rounded-xl p-6 border border-dark-600">
+            <h4 class="font-semibold text-white mb-2">Você quer um olhar independente</h4>
+            <p class="text-sm text-neutral-400 mb-3">Revisar o que outro modelo construiu.</p>
+            <p class="text-neutral-300 text-sm">O construtor é Claude; o revisor vira GPT/Codex. Troca de <strong>provedor</strong> no papel de revisor para fugir do viés compartilhado.</p>
+          </div>
+        </div>
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center"><span class="text-purple-400 font-bold">3</span></div>
+          <div class="flex-1 bg-dark-800 rounded-xl p-6 border border-dark-600">
+            <h4 class="font-semibold text-white mb-2">O custo ou a latência apertaram</h4>
+            <p class="text-sm text-neutral-400 mb-3">A conta subiu ou a espera incomoda.</p>
+            <p class="text-neutral-300 text-sm">Aquele papel volumoso rodando em Sonnet poderia ser Haiku? Se o erro é barato de checar, desça e economize — sem dó.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-red-900/20 rounded-xl border border-red-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-red-400 mb-3 flex items-center"><span class="mr-2">⚠️</span> A armadilha do "subagente começa em branco"</h3>
+        <p class="text-neutral-300">Cada subagente reúne o contexto do zero. Trocar para um modelo caro num papel <strong>pequeno</strong> faz o custo de "reunir contexto" engolir o ganho. Troca de modelo rende quando a tarefa é <strong>grande o bastante</strong> para amortizar essa partida fria — caso contrário, é desperdício disfarçado de cuidado.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-purple-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">os gatilhos concretos para trocar de nível (profundidade) ou de provedor (independência) num papel.</span></div>
+        <div><span class="text-purple-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">troca cega custa caro; saber <em>quando</em> trocar é o que transforma a matriz num sistema econômico, não num enfeite.</span></div>
+        <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">troca de nível × troca de provedor · partida fria · amortizar o contexto · tarefa grande compensa.</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 6 — Frota heterogênea + tradeoff custo/latência/qualidade -->
+    <section id="topico-6" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">6</span>
+        <h2 class="text-2xl font-bold">🚁 Frota heterogênea — o triângulo custo · latência · qualidade</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        O destino é uma <strong class="text-purple-400">frota heterogênea</strong>: vários subagentes apontando para
+        <strong class="text-purple-400">modelos diferentes</strong>, cada um no seu papel. Não é um sistema homogêneo "tudo Opus" nem
+        "tudo Haiku" — é uma mistura desenhada. E toda mistura vive sob três forças que puxam em direções opostas:
+        <strong class="text-purple-400">custo</strong>, <strong class="text-purple-400">latência</strong> e
+        <strong class="text-purple-400">qualidade</strong>. Você não maximiza as três; você as <em>equilibra</em> por papel.
+      </p>
+
+      <!-- TABELA-MATRIZ VIVA: papel x modelo x tradeoff -->
+      <div class="overflow-x-auto rounded-xl border border-dark-600 mb-6">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="matrix-th bg-dark-700/60 text-left">
+              <th class="px-4 py-3 font-semibold text-purple-400">Papel</th>
+              <th class="px-4 py-3 font-semibold text-purple-400">Modelo típico</th>
+              <th class="px-4 py-3 font-semibold text-neutral-300">Custo</th>
+              <th class="px-4 py-3 font-semibold text-neutral-300">Latência</th>
+              <th class="px-4 py-3 font-semibold text-neutral-300">Qualidade exigida</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-dark-600">
+            <tr>
+              <td class="matrix-row-head px-4 py-3 font-semibold text-neutral-100">🔍 escanear</td>
+              <td class="px-4 py-3 text-cyan-400 font-mono text-xs">haiku</td>
+              <td class="px-4 py-3 text-emerald-400">baixo</td>
+              <td class="px-4 py-3 text-emerald-400">baixíssima</td>
+              <td class="px-4 py-3 text-neutral-400">rasa basta</td>
+            </tr>
+            <tr>
+              <td class="matrix-row-head px-4 py-3 font-semibold text-neutral-100">🧭 buscar</td>
+              <td class="px-4 py-3 text-cyan-400 font-mono text-xs">haiku</td>
+              <td class="px-4 py-3 text-emerald-400">baixo</td>
+              <td class="px-4 py-3 text-emerald-400">baixa</td>
+              <td class="px-4 py-3 text-neutral-400">rasa basta</td>
+            </tr>
+            <tr>
+              <td class="matrix-row-head px-4 py-3 font-semibold text-neutral-100">🔨 construir</td>
+              <td class="px-4 py-3 text-purple-400 font-mono text-xs">sonnet</td>
+              <td class="px-4 py-3 text-amber-400">médio</td>
+              <td class="px-4 py-3 text-amber-400">média</td>
+              <td class="px-4 py-3 text-neutral-300">de ofício</td>
+            </tr>
+            <tr>
+              <td class="matrix-row-head px-4 py-3 font-semibold text-neutral-100">🔎 revisar</td>
+              <td class="px-4 py-3 text-purple-400 font-mono text-xs">sonnet <span class="text-neutral-500">/ GPT</span></td>
+              <td class="px-4 py-3 text-amber-400">médio</td>
+              <td class="px-4 py-3 text-amber-400">média</td>
+              <td class="px-4 py-3 text-neutral-300">crítica</td>
+            </tr>
+            <tr>
+              <td class="matrix-row-head px-4 py-3 font-semibold text-neutral-100">🧠 raciocínio</td>
+              <td class="px-4 py-3 text-purple-400 font-mono text-xs">opus</td>
+              <td class="px-4 py-3 text-red-400">alto</td>
+              <td class="px-4 py-3 text-red-400">alta</td>
+              <td class="px-4 py-3 text-neutral-100 font-semibold">máxima</td>
+            </tr>
+            <tr>
+              <td class="matrix-row-head px-4 py-3 font-semibold text-neutral-100">🛡️ segurança</td>
+              <td class="px-4 py-3 text-purple-400 font-mono text-xs">opus <span class="text-neutral-500">+ GPT</span></td>
+              <td class="px-4 py-3 text-red-400">alto</td>
+              <td class="px-4 py-3 text-red-400">alta</td>
+              <td class="px-4 py-3 text-neutral-100 font-semibold">máxima</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-neutral-500 mb-6">↑ A mesma matriz, agora com o trade-off explícito por linha. Repare: onde a qualidade exigida sobe, custo e latência sobem junto — e isso é aceitável só nos papéis críticos.</p>
+
+      <div class="bg-purple-900/20 rounded-xl border border-purple-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-purple-400 mb-3 flex items-center"><span class="mr-2">💡</span> "Escolha 2 de 3" — por papel</h3>
+        <p class="text-neutral-300">Custo baixo, latência baixa e qualidade máxima ao mesmo tempo não existem. Um papel de varredura aceita "barato + rápido" e abre mão de profundidade; um papel de segurança aceita "caro + lento" para comprar qualidade. A frota heterogênea é justamente fazer essa escolha <strong>papel a papel</strong>, em vez de uma escolha única para tudo.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-purple-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">uma frota com modelos misturados, equilibrando custo, latência e qualidade em cada papel.</span></div>
+        <div><span class="text-purple-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">é o estado final da maestria: a frota inteira fica barata e rápida onde dá, e forte só onde precisa.</span></div>
+        <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">frota heterogênea · triângulo custo/latência/qualidade · "escolha 2 de 3" · mistura desenhada.</span></div>
+      </div>
+    </section>
+
+    <!-- BLOCO: EXEMPLO REAL (.md comentado) — FROTA HETEROGÊNEA -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">📄</span>
+        <h2 class="text-2xl font-bold">Exemplo real: uma frota heterogênea em arquivos</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Uma frota heterogênea não é um arquivo só — é um conjunto de subagentes, cada um com seu campo
+        <code class="text-purple-400">model</code> apontando para o motor do seu papel. Abaixo, quatro
+        <code class="text-purple-400">.md</code> recortados lado a lado: repare como o <strong class="text-purple-400">papel</strong>
+        (na <code class="text-purple-400">description</code>) e o <strong class="text-purple-400">modelo</strong> andam juntos.
+      </p>
+
+      <div class="bg-dark-800 rounded-xl border border-dark-600 p-6 mb-6">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs uppercase tracking-wide text-neutral-500">.claude/agents/ — quatro arquivos da frota</span>
+          <span class="text-xs text-blue-400">Markdown + YAML</span>
+        </div>
+        <pre class="font-mono text-sm text-neutral-300 overflow-x-auto leading-relaxed"><code><span class="text-neutral-500"># ── file-scanner.md ─ papel: ESCANEAR (volumoso, raso) ──</span>
+<span class="text-blue-400">name</span>: file-scanner
+<span class="text-blue-400">description</span>: Varre o repo e lista arquivos/símbolos
+  relevantes. Use para mapear antes de qualquer leitura.
+<span class="text-blue-400">tools</span>: Grep, Glob                <span class="text-neutral-500"># só localizar</span>
+<span class="text-blue-400">model</span>: <span class="text-cyan-400">haiku</span>                      <span class="text-neutral-500"># barato + rápido</span>
+
+<span class="text-neutral-500"># ── builder.md ─ papel: CONSTRUIR (de ofício) ──────────</span>
+<span class="text-blue-400">name</span>: builder
+<span class="text-blue-400">description</span>: Implementa a mudança descrita no plano.
+<span class="text-blue-400">tools</span>: Read, Edit, Write, Bash
+<span class="text-blue-400">model</span>: <span class="text-purple-400">sonnet</span>                     <span class="text-neutral-500"># equilíbrio</span>
+
+<span class="text-neutral-500"># ── arch-thinker.md ─ papel: RACIOCÍNIO (juízo) ────────</span>
+<span class="text-blue-400">name</span>: arch-thinker
+<span class="text-blue-400">description</span>: Decide a arquitetura e os trade-offs de
+  uma mudança grande. Use ANTES de construir.
+<span class="text-blue-400">tools</span>: Read, Grep
+<span class="text-blue-400">model</span>: <span class="text-purple-400">opus</span>                       <span class="text-neutral-500"># raciocínio profundo</span>
+
+<span class="text-neutral-500"># ── cross-reviewer.md ─ papel: REVISAR (2º olhar) ──────</span>
+<span class="text-blue-400">name</span>: cross-reviewer
+<span class="text-blue-400">description</span>: Refuta o trabalho do builder buscando
+  furos. Use após qualquer mudança sensível.
+<span class="text-blue-400">tools</span>: Read, Grep
+<span class="text-blue-400">model</span>: <span class="text-neutral-300">gpt-codex</span>     <span class="text-neutral-500"># OUTRA família = independência</span></code></pre>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <h4 class="font-semibold text-purple-400 mb-3">🧩 O que muda de arquivo para arquivo</h4>
+          <ul class="space-y-2 text-neutral-300 text-sm">
+            <li><strong class="text-purple-400">description</strong> — declara o papel (escanear / construir / raciocinar / revisar).</li>
+            <li><strong class="text-purple-400">model</strong> — segue o papel: papel raso → haiku, juízo → opus.</li>
+            <li><strong class="text-purple-400">tools</strong> — papéis de juízo/revisão ficam read-only (Read, Grep).</li>
+            <li><strong class="text-purple-400">provedor</strong> — o revisor troca de família de propósito.</li>
+          </ul>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <h4 class="font-semibold text-purple-400 mb-3">🎯 Por que isto é "heterogêneo"</h4>
+          <ul class="space-y-2 text-neutral-300 text-sm">
+            <li>Quatro agentes, <strong>três motores diferentes</strong> + um provedor externo.</li>
+            <li>O custo total cai: o trabalho volumoso roda em haiku.</li>
+            <li>A qualidade sobe onde importa: opus no raciocínio.</li>
+            <li>A revisão é independente: outra família erra diferente.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOCO: PROMPTS PRONTOS -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">⌨️</span>
+        <h2 class="text-2xl font-bold">Prompts prontos (copie e cole)</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Três prompts para o maestro <strong class="text-purple-400">distribuir modelos por papel</strong>. O padrão é sempre nomear o
+        papel e justificar o motor — barato onde dá, forte onde precisa, independente na revisão.
+      </p>
+
+      <div class="space-y-4">
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-purple-400">Prompt 1 — atribuir modelo a cada papel</span>
+            <span class="text-xs text-neutral-500">monta a frota</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>Para este job, monte uma frota por papel: use Haiku pra
+escanear e buscar, Sonnet pra construir e revisar, e Opus
+só pro raciocínio de arquitetura. Justifique cada escolha
+em uma linha (custo/latência/qualidade).</code></pre>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-purple-400">Prompt 2 — segundo olhar cross-provedor</span>
+            <span class="text-xs text-neutral-500">compra independência</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>O builder (Sonnet) terminou. Agora rode um revisor em
+outro provedor (GPT/Codex) só pra refutar: liste os furos
+que um modelo da MESMA família talvez não veja. Não
+reescreva — só aponte.</code></pre>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-purple-400">Prompt 3 — cortar custo sem perder qualidade</span>
+            <span class="text-xs text-neutral-500">otimiza o triângulo</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>Revise minha frota: que papéis hoje em Sonnet poderiam
+cair pra Haiku sem risco (erro barato de checar)? E que
+papéis merecem subir pra Opus porque o erro seria caro?
+Devolva só a matriz papel → modelo ajustada.</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOCO: TELA SIMULADA (monitor-mock, frota heterogênea + status line) -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">🖥️</span>
+        <h2 class="text-2xl font-bold">Tela simulada: a frota heterogênea rodando</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        É assim que a frota heterogênea aparece no terminal: cada subagente roda no <strong class="text-purple-400">modelo do seu
+        papel</strong>, e a coluna do meio mostra qual motor cada um está usando. Repare no <strong class="text-purple-400">custo
+        relativo</strong> à direita — os papéis volumosos em Haiku custam quase nada; só o raciocínio em Opus pesa.
+      </p>
+
+      <div class="rounded-xl border border-dark-600 bg-dark-900 overflow-hidden mb-2">
+        <!-- barra de título -->
+        <div class="flex items-center justify-between px-4 py-2 bg-dark-700/60 border-b border-dark-600">
+          <div class="flex items-center space-x-2"><span class="w-3 h-3 rounded-full bg-red-400/70"></span><span class="w-3 h-3 rounded-full bg-amber-400/70"></span><span class="w-3 h-3 rounded-full bg-emerald-400/70"></span></div>
+          <span class="text-xs text-neutral-400 font-mono">claude code · refatorar-auth · frota heterogênea</span>
+          <span class="text-xs text-purple-400 font-mono">⏱ 01:12</span>
+        </div>
+        <!-- subagentes -->
+        <div class="p-4 space-y-3 font-mono text-xs">
+          <div class="flex items-center gap-3"><span class="text-purple-400 w-44 shrink-0">● file-scanner</span><span class="text-cyan-400 w-20 shrink-0">Haiku</span><div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill h-full bg-purple-500/70" style="width:94%"></div></div><span class="text-emerald-400 w-16 text-right shrink-0">$ ·</span></div>
+          <div class="flex items-center gap-3"><span class="text-purple-400 w-44 shrink-0">● grep-symbols</span><span class="text-cyan-400 w-20 shrink-0">Haiku</span><div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b2 h-full bg-purple-500/70" style="width:81%"></div></div><span class="text-emerald-400 w-16 text-right shrink-0">$ ·</span></div>
+          <div class="flex items-center gap-3"><span class="text-purple-400 w-44 shrink-0">● builder</span><span class="text-purple-300 w-20 shrink-0">Sonnet</span><div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b3 h-full bg-purple-500/70" style="width:47%"></div></div><span class="text-amber-400 w-16 text-right shrink-0">$$ ··</span></div>
+          <div class="flex items-center gap-3"><span class="text-purple-400 w-44 shrink-0">● arch-thinker</span><span class="text-purple-300 w-20 shrink-0">Opus</span><div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b4 h-full bg-purple-500/70" style="width:33%"></div></div><span class="text-red-400 w-16 text-right shrink-0">$$$ ···</span></div>
+          <div class="flex items-center gap-3"><span class="text-purple-400 w-44 shrink-0">● cross-reviewer</span><span class="text-neutral-300 w-20 shrink-0">GPT/Codex</span><div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b5 h-full bg-purple-500/70" style="width:18%"></div></div><span class="text-amber-400 w-16 text-right shrink-0">$$ ··</span></div>
+          <div class="text-neutral-500 pt-1">5 subagentes · 3 motores + 1 provedor externo · síntese após os relatórios</div>
+        </div>
+        <!-- status line -->
+        <div class="flex items-center justify-between px-4 py-2 bg-dark-800 border-t border-dark-600 font-mono text-xs">
+          <span class="text-neutral-400">maestro · Opus</span>
+          <div class="flex items-center gap-2">
+            <span class="text-neutral-500">custo da frota</span>
+            <div class="w-28 h-2 rounded bg-dark-700 overflow-hidden"><div class="h-full bg-purple-500/70" style="width:38%"></div></div>
+            <span class="text-purple-400">38% do teto</span>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-neutral-500">↑ Recriação ilustrativa do terminal (não é screenshot real). Cada subagente no motor do seu papel; o custo concentra-se só no Opus do raciocínio.</p>
+    </section>
+
+    <!-- BLOCO: EXERCÍCIO — MONTAR A MATRIZ -->
+    <section class="mb-12">
+      <div class="bg-gradient-to-br from-purple-900/30 to-dark-800 rounded-xl border border-purple-500/30 p-8">
+        <div class="flex items-center space-x-4 mb-6">
+          <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">🎯</span>
+          <h2 class="text-2xl font-bold">Exercício — monte a sua matriz papel × modelo</h2>
+        </div>
+        <p class="text-neutral-300 mb-6 leading-relaxed">
+          Pegue um <strong class="text-purple-400">job real seu</strong> (um projeto, uma investigação, uma migração) e desenhe a
+          frota: para cada um dos <strong class="text-purple-400">seis papéis</strong> — escanear, buscar, construir, revisar,
+          raciocínio, segurança — escolha um <strong class="text-purple-400">modelo</strong> e justifique pelo triângulo
+          custo · latência · qualidade.
+        </p>
+
+        <div class="bg-dark-800/60 rounded-lg p-5 mb-6">
+          <h4 class="font-semibold text-purple-400 mb-3">Como fazer</h4>
+          <ol class="space-y-2 text-neutral-300 text-sm list-decimal list-inside">
+            <li>Liste os seis papéis (use a matriz do topo como gabarito de partida).</li>
+            <li>Para cada papel, escolha o modelo: <code class="text-purple-400">haiku</code>, <code class="text-purple-400">sonnet</code>, <code class="text-purple-400">opus</code> ou outro provedor.</li>
+            <li>Escreva <strong>uma linha</strong> por papel justificando: o erro aqui é caro? o volume é alto? a latência importa?</li>
+            <li>Marque pelo menos <strong>um papel</strong> que ganha um 2º olhar de outro provedor (e diga por quê).</li>
+          </ol>
+        </div>
+
+        <!-- Esqueleto da matriz para preencher -->
+        <div class="overflow-x-auto rounded-lg border border-dark-600 mb-6">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="matrix-th bg-dark-700/60 text-left">
+                <th class="px-4 py-2 font-semibold text-purple-400">Papel</th>
+                <th class="px-4 py-2 font-semibold text-purple-400">Seu modelo</th>
+                <th class="px-4 py-2 font-semibold text-neutral-300">Justificativa (1 linha)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-dark-600 text-neutral-400">
+              <tr><td class="matrix-row-head px-4 py-2 text-neutral-100">🔍 escanear</td><td class="px-4 py-2 font-mono text-xs">______</td><td class="px-4 py-2">_______________________________</td></tr>
+              <tr><td class="matrix-row-head px-4 py-2 text-neutral-100">🧭 buscar</td><td class="px-4 py-2 font-mono text-xs">______</td><td class="px-4 py-2">_______________________________</td></tr>
+              <tr><td class="matrix-row-head px-4 py-2 text-neutral-100">🔨 construir</td><td class="px-4 py-2 font-mono text-xs">______</td><td class="px-4 py-2">_______________________________</td></tr>
+              <tr><td class="matrix-row-head px-4 py-2 text-neutral-100">🔎 revisar</td><td class="px-4 py-2 font-mono text-xs">______</td><td class="px-4 py-2">_______________________________</td></tr>
+              <tr><td class="matrix-row-head px-4 py-2 text-neutral-100">🧠 raciocínio</td><td class="px-4 py-2 font-mono text-xs">______</td><td class="px-4 py-2">_______________________________</td></tr>
+              <tr><td class="matrix-row-head px-4 py-2 text-neutral-100">🛡️ segurança</td><td class="px-4 py-2 font-mono text-xs">______</td><td class="px-4 py-2">_______________________________</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="bg-blue-900/20 rounded-xl border border-blue-500/30 p-6 mb-6">
+          <h4 class="font-semibold text-blue-400 mb-3">✅ Critério de verificação — como saber que acertou</h4>
+          <p class="text-neutral-300 text-sm mb-3">A sua matriz está bem montada se ela passar nestes quatro testes:</p>
+          <ul class="space-y-2 text-neutral-300 text-sm">
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">→</span><span><strong>Não é homogênea:</strong> aparecem <strong>pelo menos dois modelos diferentes</strong> (se deu tudo Opus ou tudo Haiku, refaça).</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">→</span><span><strong>Os papéis críticos sobem:</strong> raciocínio e segurança usam o motor mais forte da sua matriz.</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">→</span><span><strong>Os papéis volumosos descem:</strong> escanear e buscar usam o motor mais barato/rápido.</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">→</span><span><strong>Há um 2º olhar:</strong> pelo menos um papel de revisão/segurança ganha um provedor diferente do construtor.</span></li>
+          </ul>
+          <p class="text-neutral-300 text-sm mt-3">Cada justificativa deve citar <strong>ao menos um</strong> vértice do triângulo (custo, latência ou qualidade). Justificativa "porque é melhor" não conta.</p>
+        </div>
+
+        <div class="bg-dark-800/60 rounded-lg p-5">
+          <h4 class="font-semibold text-purple-400 mb-3">Exemplo resolvido (uma linha)</h4>
+          <p class="text-neutral-300 text-sm"><strong>Papel:</strong> 🛡️ segurança · <strong>Modelo:</strong> <code class="text-purple-400">opus</code> + 2º olhar em <code class="text-purple-400">GPT/Codex</code>. <strong class="text-purple-400">Justificativa:</strong> o erro de segurança é caro e irreversível (qualidade máxima vale custo e latência altos); o 2º provedor compra independência contra viés compartilhado. Passa nos quatro testes.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESUMO / NAVEGAÇÃO -->
+    <section class="mb-12">
+      <div class="bg-gradient-to-br from-purple-900/40 via-dark-800 to-dark-800 rounded-xl border border-purple-500/30 p-8">
+        <h2 class="text-2xl font-bold mb-6 flex items-center"><span class="mr-3">✅</span> Resumo do módulo</h2>
+
+        <div class="space-y-4 mb-8">
+          <div class="flex items-start space-x-3"><span class="text-purple-400 mt-1">✓</span><div><strong class="text-white">Escada de papéis</strong><span class="text-neutral-400"> — Haiku escaneia/busca, Sonnet constrói/revisa, Opus raciocina/cuida de segurança. O papel pede o motor.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-purple-400 mt-1">✓</span><div><strong class="text-white">GPT / Codex</strong><span class="text-neutral-400"> — segundo provedor como revisor independente: famílias diferentes erram diferente.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-purple-400 mt-1">✓</span><div><strong class="text-white">Outros provedores</strong><span class="text-neutral-400"> — pense por classe (rápido/equilíbrio/raciocínio), não por marca; o slot é substituível.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-purple-400 mt-1">✓</span><div><strong class="text-white">O trade-off</strong><span class="text-neutral-400"> — profundidade custa dinheiro e tempo; a régua é o custo de errar o papel.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-purple-400 mt-1">✓</span><div><strong class="text-white">Quando trocar</strong><span class="text-neutral-400"> — por nível (profundidade) ou por provedor (independência); só compensa em tarefa grande (partida fria).</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-purple-400 mt-1">✓</span><div><strong class="text-white">Frota heterogênea</strong><span class="text-neutral-400"> — modelos misturados por papel, equilibrando o triângulo custo · latência · qualidade ("escolha 2 de 3").</span></div></div>
+        </div>
+
+        <div class="bg-dark-800/50 rounded-lg p-4 mb-8">
+          <h3 class="font-semibold text-purple-400 mb-2">Próximo módulo:</h3>
+          <p class="text-neutral-300">4.4 — Segurança. Baixar <code class="text-purple-400">.md</code> de terceiros, prompt injection e o subagente verificador read-only.</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="modulo-4-2.html" class="flex-1 text-center px-6 py-3 bg-dark-700 text-neutral-300 rounded-lg font-semibold hover:bg-dark-600 transition-colors">← Módulo anterior</a>
+          <a href="index.html" class="flex-1 text-center px-6 py-3 bg-dark-700 text-neutral-300 rounded-lg font-semibold hover:bg-dark-600 transition-colors">Índice da trilha</a>
+          <a href="modulo-4-4.html" class="flex-1 text-center px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-500 transition-colors">Próximo módulo →</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-dark-600 py-8 mt-16">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-neutral-500 text-sm">
+      <p class="mb-2">Subagentes — 2026 · um curso no formato
+        <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 font-medium">INEMA.CLUB</a>
+      </p>
+      <p>Trilha 4 · Avançado &amp; cross-ambiente · Módulo 4.3</p>
+    </div>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script>
+    // Toggle de tópicos (compatível com o padrão; expansíveis ficam abertos por padrão nesta página de módulo)
+    function toggleTopic(button) {
+      const topicItem = button.closest('.topic-item');
+      if (!topicItem) return;
+      const explanation = topicItem.querySelector('.topic-explanation');
+      const moduleCard = button.closest('.bg-dark-800');
+      if (moduleCard) {
+        moduleCard.querySelectorAll('.topic-explanation.active').forEach(exp => {
+          if (exp !== explanation) exp.classList.remove('active');
+        });
+      }
+      if (explanation) explanation.classList.toggle('active');
+    }
+
+    // Theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+    const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+    const html = document.documentElement;
+
+    if (localStorage.getItem('theme') === 'light' || (!localStorage.getItem('theme') && !html.classList.contains('dark'))) {
+      themeToggleDarkIcon.classList.remove('hidden');
+      html.classList.remove('dark');
+    } else {
+      themeToggleLightIcon.classList.remove('hidden');
+    }
+
+    themeToggle.addEventListener('click', () => {
+      themeToggleDarkIcon.classList.toggle('hidden');
+      themeToggleLightIcon.classList.toggle('hidden');
+      html.classList.toggle('dark');
+      localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+    });
+  </script>
+
+</body>
+</html>

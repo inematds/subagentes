@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arquitetura multiagente em escala | Subagentes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#FACC15',
+            dark: { 900: '#111827', 800: '#1f2937', 700: '#374151', 600: '#4b5563' }
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .dark body { background-color: #111827; }
+    .topic-explanation { display: none; }
+    .topic-explanation.active { display: block; }
+
+    /* Light mode overrides - OBRIGATORIO (base) */
+    html:not(.dark) body { background-color: #f8fafc; }
+    html:not(.dark) .bg-dark-900 { background-color: #ffffff; }
+    html:not(.dark) .bg-dark-800 { background-color: #f9fafb; }
+    html:not(.dark) .bg-dark-700 { background-color: #f3f4f6; }
+    html:not(.dark) .bg-dark-600 { background-color: #e5e7eb; }
+    html:not(.dark) .text-neutral-100 { color: #111827; }
+    html:not(.dark) .text-neutral-300 { color: #4b5563; }
+    html:not(.dark) .text-neutral-400 { color: #6b7280; }
+    html:not(.dark) .text-neutral-500 { color: #9ca3af; }
+    html:not(.dark) .border-dark-600 { border-color: #d1d5db; }
+    html:not(.dark) .border-dark-700 { border-color: #e5e7eb; }
+
+    /* Light mode - cores de acento (trilha purple T4) */
+    html:not(.dark) .text-purple-400 { color: #7c3aed; }
+    html:not(.dark) .bg-purple-500\/20 { background-color: rgba(124, 58, 237, 0.12); }
+    html:not(.dark) .bg-purple-500\/10 { background-color: rgba(124, 58, 237, 0.08); }
+    html:not(.dark) .border-purple-500\/30 { border-color: rgba(124, 58, 237, 0.25); }
+    html:not(.dark) .hover\:bg-purple-500\/30:hover { background-color: rgba(124, 58, 237, 0.18); }
+    html:not(.dark) .hover\:text-purple-400:hover { color: #7c3aed; }
+    html:not(.dark) .hover\:bg-purple-500\/10:hover { background-color: rgba(124, 58, 237, 0.08); }
+    html:not(.dark) .bg-purple-900\/20 { background-color: rgba(124, 58, 237, 0.08); }
+    html:not(.dark) .bg-purple-900\/30 { background-color: rgba(124, 58, 237, 0.10); }
+
+    /* Light mode - cores de apoio usadas nos boxes (blue dados / red erros / cyan fluxo) */
+    html:not(.dark) .text-blue-400 { color: #2563eb; }
+    html:not(.dark) .bg-blue-900\/20 { background-color: rgba(37, 99, 235, 0.08); }
+    html:not(.dark) .border-blue-500\/30 { border-color: rgba(37, 99, 235, 0.25); }
+    html:not(.dark) .text-red-400 { color: #dc2626; }
+    html:not(.dark) .bg-red-900\/20 { background-color: rgba(220, 38, 38, 0.08); }
+    html:not(.dark) .border-red-500\/30 { border-color: rgba(220, 38, 38, 0.25); }
+    html:not(.dark) .text-cyan-400 { color: #0891b2; }
+    html:not(.dark) .bg-cyan-900\/20 { background-color: rgba(8, 145, 178, 0.08); }
+    html:not(.dark) .border-cyan-500\/30 { border-color: rgba(8, 145, 178, 0.25); }
+
+    /* Light mode - remove gradientes (fundo uniforme) */
+    html:not(.dark) [class*="bg-gradient-to"] { background-image: none !important; }
+
+    /* Light mode - cores especiais */
+    html:not(.dark) .text-primary { color: #a16207; }
+    html:not(.dark) .bg-primary\/10 { background-color: rgba(161, 98, 7, 0.08); }
+    html:not(.dark) .border-primary\/30 { border-color: rgba(161, 98, 7, 0.25); }
+    html:not(.dark) .border-primary\/40 { border-color: rgba(161, 98, 7, 0.25); }
+    html:not(.dark) .text-sky-400 { color: #0369a1; }
+    html:not(.dark) .text-yellow-400 { color: #a16207; }
+    html:not(.dark) .hover\:text-sky-300:hover { color: #0284c7; }
+    html:not(.dark) .hover\:text-yellow-300:hover { color: #854d0e; }
+
+    /* Light mode - nav */
+    html:not(.dark) .bg-dark-900\/95 { background-color: rgba(255, 255, 255, 0.95); }
+
+    /* Light mode - diagramas SVG menos neon */
+    html:not(.dark) svg[role="img"] { filter: saturate(0.82) brightness(0.96); }
+
+    /* Dark mode - bordas e linhas divisorias mais suaves (OBRIGATORIO) */
+    .dark .border-dark-600 { border-color: #374151; }
+    .dark .divide-dark-600 > :not([hidden]) ~ :not([hidden]) { border-color: #374151; }
+
+    /* Pulso dos agentes nos diagramas (apenas se o usuario permitir movimento) */
+    @keyframes wf-pulse { 0%,100% { opacity:.55 } 50% { opacity:1 } }
+    @keyframes wf-bar { from { transform: translateX(-6%); } to { transform: translateX(0); } }
+    @keyframes wf-dash { to { stroke-dashoffset: -22; } }
+    @media (prefers-reduced-motion: no-preference) {
+      .wf-a { animation: wf-pulse 2.6s ease-in-out infinite; }
+      .wf-a:nth-child(2){animation-delay:.2s} .wf-a:nth-child(3){animation-delay:.4s}
+      .wf-a:nth-child(4){animation-delay:.6s} .wf-a:nth-child(5){animation-delay:.8s}
+      .wf-a:nth-child(6){animation-delay:1s}
+      .barfill { animation: wf-bar 3s ease-in-out infinite alternate; }
+      .barfill.b2{animation-delay:.5s} .barfill.b3{animation-delay:1s} .barfill.b4{animation-delay:1.4s} .barfill.b5{animation-delay:1.8s}
+      .wf-loop { stroke-dasharray: 6 5; animation: wf-dash 1.4s linear infinite; }
+    }
+  </style>
+</head>
+<body class="bg-dark-900 text-neutral-100 min-h-screen">
+
+  <!-- NAVIGATION -->
+  <nav class="sticky top-0 z-50 bg-dark-900/95 backdrop-blur-sm border-b border-dark-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-14">
+        <!-- Logo + INEMA.CLUB -->
+        <div class="flex items-center space-x-4">
+          <a href="../../index.html" class="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300">
+            <span class="text-2xl">🤖</span>
+            <span class="font-bold text-lg hidden sm:inline">Subagentes</span>
+          </a>
+          <span class="text-neutral-600">|</span>
+          <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 text-sm font-medium">INEMA.CLUB</a>
+        </div>
+
+        <!-- Trilhas + Theme Toggle -->
+        <div class="flex items-center space-x-1 sm:space-x-2">
+          <!-- Trilha 1 -->
+          <a href="../trilha1/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
+            <span class="sm:hidden">T1</span>
+            <span class="hidden sm:inline">Fundamentos</span>
+          </a>
+          <!-- Trilha 2 -->
+          <a href="../trilha2/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
+            <span class="sm:hidden">T2</span>
+            <span class="hidden sm:inline">Na prática</span>
+          </a>
+          <!-- Trilha 3 -->
+          <a href="../trilha3/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+            <span class="sm:hidden">T3</span>
+            <span class="hidden sm:inline">Orquestração</span>
+          </a>
+          <!-- Trilha 4 (ativa) -->
+          <a href="index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-purple-400 bg-purple-500/10">
+            <span class="sm:hidden">T4</span>
+            <span class="hidden sm:inline">Avançado</span>
+          </a>
+
+          <!-- Theme Toggle -->
+          <button id="theme-toggle" class="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 transition-colors ml-2">
+            <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+            </svg>
+            <svg id="theme-toggle-light-icon" class="hidden w-5 h-5 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- BREADCRUMB -->
+  <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div class="flex items-center space-x-2 text-sm text-neutral-400">
+      <a href="../../index.html" class="hover:text-purple-400">Início</a>
+      <span>/</span>
+      <a href="index.html" class="hover:text-purple-400">Trilha 4</a>
+      <span>/</span>
+      <span class="text-purple-400">Módulo 4.1</span>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <header class="bg-gradient-to-br from-purple-900/30 via-dark-800 to-dark-800 py-12 border-b border-dark-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <span class="inline-block px-3 py-1 bg-purple-500/20 text-purple-400 text-xs font-semibold rounded-full mb-4">
+        MÓDULO 4.1 · Trilha 4 · Avançado &amp; cross-ambiente
+      </span>
+      <h1 class="text-2xl sm:text-3xl font-bold mb-4">🛰️ Arquitetura multiagente em escala</h1>
+      <p class="text-lg text-neutral-400 max-w-3xl">
+        Sair de "um subagente" para uma <strong class="text-purple-400">frota</strong> não é só pedir mais. É montar um sistema
+        que <strong class="text-purple-400">busca até secar</strong>, <strong class="text-purple-400">refuta o que achou</strong>,
+        olha por <strong class="text-purple-400">lentes diferentes</strong> e nunca corta nada em silêncio — para então
+        <strong class="text-purple-400">sintetizar</strong> uma resposta em que você pode confiar.
+      </p>
+
+      <!-- Stats Banner -->
+      <div class="grid grid-cols-4 gap-4 mt-8 max-w-2xl">
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-purple-400">7</div>
+          <div class="text-xs text-neutral-400">Tópicos</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-purple-400">~35</div>
+          <div class="text-xs text-neutral-400">Minutos</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-purple-400">Avançado</div>
+          <div class="text-xs text-neutral-400">Nível</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-purple-400">Arquitetura</div>
+          <div class="text-xs text-neutral-400">Tipo</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEUDO -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <!-- ABERTURA + SVG PIPELINE find->verify->synthesize -->
+    <section class="mb-12">
+      <p class="text-neutral-300 mb-8 leading-relaxed max-w-3xl">
+        Até aqui você delegou tarefas isoladas. Agora imagine um pedido grande de verdade: <em>"levante tudo o que existe
+        sobre o tema X, confirme o que é mesmo verdade e me entregue um relatório fechado"</em>. Um único subagente não dá
+        conta — e pior, se ele <strong class="text-purple-400">parar cedo demais</strong> ou <strong class="text-purple-400">acreditar
+        no primeiro resultado</strong>, você recebe uma resposta bonita e errada. A arquitetura em escala resolve isso com
+        três estágios encadeados: uma <strong class="text-purple-400">frota que busca até secar</strong> (find), um
+        <strong class="text-cyan-400">tribunal que refuta</strong> cada achado (verify) e um <strong class="text-purple-400">sintetizador</strong>
+        que junta só o que sobreviveu (synthesize). Grave esse pipeline — ele é o esqueleto do módulo inteiro.
+      </p>
+
+      <div class="rounded-2xl border border-purple-500/30 bg-dark-900/40 p-3 sm:p-4 mb-2 overflow-hidden">
+        <svg viewBox="0 0 1000 300" class="w-full h-auto" role="img" aria-label="Pipeline de três estágios: na esquerda, FIND, uma frota de buscadores que roda em laço até secar; no centro, VERIFY, vários céticos refutam cada achado e o que a maioria refuta é descartado; na direita, SYNTHESIZE, um sintetizador junta apenas os achados que sobreviveram num relatório final">
+          <defs>
+            <linearGradient id="m41-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#c084fc"/><stop offset="1" stop-color="#a855f7"/>
+            </linearGradient>
+            <filter id="m41-glow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <pattern id="m41-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+              <circle cx="1.3" cy="1.3" r="1.3" fill="#a855f7" opacity="0.12"/>
+            </pattern>
+            <marker id="m41-ah" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 L2.4,4.5 Z" fill="#c084fc"/></marker>
+            <marker id="m41-ahc" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 L2.4,4.5 Z" fill="#38bdf8"/></marker>
+          </defs>
+          <rect x="0" y="0" width="1000" height="300" fill="url(#m41-grid)"/>
+
+          <!-- rótulos de estágio -->
+          <text x="170" y="28" text-anchor="middle" fill="#c084fc" font-family="Inter,sans-serif" font-weight="600" font-size="15">1 · FIND</text>
+          <text x="500" y="28" text-anchor="middle" fill="#38bdf8" font-family="Inter,sans-serif" font-weight="600" font-size="15">2 · VERIFY</text>
+          <text x="850" y="28" text-anchor="middle" fill="#c084fc" font-family="Inter,sans-serif" font-weight="600" font-size="15">3 · SYNTHESIZE</text>
+
+          <!-- FIND: frota de buscadores + laço -->
+          <g font-family="Inter,sans-serif" font-size="12" font-weight="600">
+            <g class="wf-a"><rect x="60" y="70"  width="120" height="30" rx="8" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="120" y="90"  text-anchor="middle" fill="#bfe6ff">buscador</text></g>
+            <g class="wf-a"><rect x="60" y="110" width="120" height="30" rx="8" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="120" y="130" text-anchor="middle" fill="#bfe6ff">buscador</text></g>
+            <g class="wf-a"><rect x="60" y="150" width="120" height="30" rx="8" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="120" y="170" text-anchor="middle" fill="#bfe6ff">buscador</text></g>
+            <g class="wf-a"><rect x="60" y="190" width="120" height="30" rx="8" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="120" y="210" text-anchor="middle" fill="#bfe6ff">buscador …</text></g>
+          </g>
+          <!-- laço "até secar" -->
+          <path class="wf-loop" d="M120,232 C120,266 36,266 36,150 C36,64 96,70 116,70" fill="none" stroke="#c084fc" stroke-width="1.8" opacity="0.7" marker-end="url(#m41-ah)"/>
+          <text x="30" y="150" text-anchor="middle" fill="#c084fc" font-family="Inter,sans-serif" font-size="10.5" transform="rotate(-90 30 150)">repete até secar (K rodadas vazias)</text>
+
+          <!-- setas FIND -> VERIFY -->
+          <g fill="none" stroke="#c084fc" stroke-width="1.8" opacity="0.5">
+            <path d="M180,90  C260,90 280,118 392,118" marker-end="url(#m41-ah)"/>
+            <path d="M180,130 L392,150" marker-end="url(#m41-ah)"/>
+            <path d="M180,170 C260,170 280,182 392,182" marker-end="url(#m41-ah)"/>
+          </g>
+
+          <!-- VERIFY: céticos -->
+          <g font-family="Inter,sans-serif" font-size="12" font-weight="600">
+            <g class="wf-a"><rect x="392" y="100" width="120" height="30" rx="8" fill="#1a1230" stroke="#c084fc" stroke-width="2"/><text x="452" y="120" text-anchor="middle" fill="#e9d5ff">cético</text></g>
+            <g class="wf-a"><rect x="392" y="138" width="120" height="30" rx="8" fill="#1a1230" stroke="#c084fc" stroke-width="2"/><text x="452" y="158" text-anchor="middle" fill="#e9d5ff">cético</text></g>
+            <g class="wf-a"><rect x="392" y="176" width="120" height="30" rx="8" fill="#1a1230" stroke="#c084fc" stroke-width="2"/><text x="452" y="196" text-anchor="middle" fill="#e9d5ff">cético</text></g>
+          </g>
+          <text x="452" y="230" text-anchor="middle" fill="#38bdf8" font-family="Inter,sans-serif" font-size="10.5">maioria refuta → descarta</text>
+
+          <!-- portão de maioria -->
+          <g filter="url(#m41-glow)"><rect x="556" y="118" width="96" height="64" rx="12" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/></g>
+          <text x="604" y="146" text-anchor="middle" fill="#38bdf8" font-family="Inter,sans-serif" font-weight="600" font-size="13">voto</text>
+          <text x="604" y="166" text-anchor="middle" fill="#9ad6ff" font-family="Inter,sans-serif" font-size="11">maioria</text>
+          <g fill="none" stroke="#c084fc" stroke-width="1.8" opacity="0.5">
+            <path d="M512,118 L556,135" marker-end="url(#m41-ahc)"/>
+            <path d="M512,153 L556,150" marker-end="url(#m41-ahc)"/>
+            <path d="M512,191 L556,165" marker-end="url(#m41-ahc)"/>
+          </g>
+
+          <!-- setas VERIFY -> SYNTHESIZE -->
+          <path d="M652,150 L760,150" fill="none" stroke="#c084fc" stroke-width="1.8" opacity="0.6" marker-end="url(#m41-ah)"/>
+          <text x="706" y="140" text-anchor="middle" fill="#c084fc" font-family="Inter,sans-serif" font-size="10.5">sobreviventes</text>
+
+          <!-- SYNTHESIZE -->
+          <g filter="url(#m41-glow)"><rect x="760" y="110" width="180" height="80" rx="14" fill="#1a1230" stroke="url(#m41-grad)" stroke-width="2"/></g>
+          <text x="850" y="144" text-anchor="middle" fill="#c084fc" font-family="Inter,sans-serif" font-weight="600" font-size="16">Sintetizador</text>
+          <text x="850" y="166" text-anchor="middle" fill="#d8b4fe" font-family="Inter,sans-serif" font-size="11.5">relatório final, citado</text>
+
+          <!-- nota completeness/log embaixo -->
+          <text x="500" y="285" text-anchor="middle" fill="#9ca3af" font-family="Inter,sans-serif" font-size="11">um critic de completude pergunta "o que ainda falta?" · tudo que foi cortado vai pro log (sem cap silencioso)</text>
+        </svg>
+      </div>
+      <p class="text-xs text-neutral-500 mb-0">↑ O esqueleto do harness: <strong>find</strong> em laço → <strong>verify</strong> adversarial por maioria → <strong>synthesize</strong> só dos sobreviventes.</p>
+    </section>
+
+    <!-- DIVISOR -->
+    <h2 class="text-2xl font-bold mb-6">Conteúdo detalhado</h2>
+
+    <!-- TÓPICO 1 — A frota -->
+    <section id="topico-1" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">1</span>
+        <h2 class="text-2xl font-bold">🚢 A frota: de um subagente a muitos</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Uma <strong class="text-purple-400">frota</strong> é um conjunto de subagentes do mesmo tipo trabalhando o mesmo problema
+        ao mesmo tempo — não um, não dois, mas dez, quarenta, cem, cada um numa fatia. O maestro deixa de "delegar uma tarefa" e
+        passa a <strong class="text-purple-400">comandar uma operação</strong>: dividir o espaço de busca, despachar a frota,
+        recolher os pedaços e seguir para o próximo estágio. A unidade de raciocínio deixa de ser o subagente e vira o
+        <strong class="text-purple-400">sistema inteiro</strong>.
+      </p>
+
+      <div class="bg-gradient-to-br from-purple-900/30 to-dark-800 rounded-xl border border-purple-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-purple-400 mb-4 flex items-center">
+          <span class="mr-2">⚓</span> A analogia da frota de exploração
+        </h3>
+        <p class="text-neutral-300 mb-4">
+          Pense num oceano a mapear. Um único navio leva meses e ainda perde regiões inteiras. Uma <strong>frota</strong> divide o mar
+          em setores, manda um navio para cada um, e a almirante (o maestro) consolida as cartas. Nenhum navio fala com o outro —
+          todos reportam à almirante. Se uma região vier confusa, ela <strong>manda mais navios para lá</strong>. Escala não é
+          tamanho do navio; é quantidade e coordenação.
+        </p>
+        <ul class="space-y-2 text-neutral-300">
+          <li class="flex items-start space-x-2"><span class="text-purple-400 mt-1">•</span><span><strong>Almirante</strong> = o maestro/harness, que particiona, despacha e consolida.</span></li>
+          <li class="flex items-start space-x-2"><span class="text-purple-400 mt-1">•</span><span><strong>Navios</strong> = a frota de subagentes, cada um num setor do problema.</span></li>
+          <li class="flex items-start space-x-2"><span class="text-purple-400 mt-1">•</span><span><strong>Cartas</strong> = os relatórios parciais que voltam para serem unidos.</span></li>
+        </ul>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3 mb-6">
+        <div>
+          <span class="text-purple-400 font-semibold">O que é:</span>
+          <p class="text-neutral-300 text-sm">um padrão em que muitos subagentes do mesmo papel atacam fatias do mesmo problema em paralelo, coordenados por um único orquestrador.</p>
+        </div>
+        <div>
+          <span class="text-purple-400 font-semibold">Por que aprender:</span>
+          <p class="text-neutral-300 text-sm">problemas de cobertura ampla (varrer um repositório gigante, levantar literatura, auditar centenas de arquivos) só ficam tratáveis quando você pensa em frota, não em "um agente esforçado".</p>
+        </div>
+        <div>
+          <span class="text-purple-400 font-semibold">Conceitos-chave:</span>
+          <p class="text-neutral-300 text-sm">particionamento · paralelismo de larga escala · orquestrador como hub · o sistema como unidade de raciocínio.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-dark-800 rounded-lg p-4 border border-dark-600 text-center"><div class="text-2xl mb-1">🧭</div><div class="text-sm font-semibold text-purple-400">Particiona</div><div class="text-xs text-neutral-400">divide o espaço</div></div>
+        <div class="bg-dark-800 rounded-lg p-4 border border-dark-600 text-center"><div class="text-2xl mb-1">🚀</div><div class="text-sm font-semibold text-purple-400">Despacha</div><div class="text-xs text-neutral-400">frota paralela</div></div>
+        <div class="bg-dark-800 rounded-lg p-4 border border-dark-600 text-center"><div class="text-2xl mb-1">📥</div><div class="text-sm font-semibold text-purple-400">Recolhe</div><div class="text-xs text-neutral-400">relatórios parciais</div></div>
+        <div class="bg-dark-800 rounded-lg p-4 border border-dark-600 text-center"><div class="text-2xl mb-1">🧩</div><div class="text-sm font-semibold text-purple-400">Consolida</div><div class="text-xs text-neutral-400">um resultado</div></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 2 — loop-until-dry (timeline) -->
+    <section id="topico-2" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">2</span>
+        <h2 class="text-2xl font-bold">🔁 Loop-until-dry: repetir até secar</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        O maior erro de uma busca em escala é <strong class="text-purple-400">parar cedo demais</strong>. Um subagente acha cinco
+        coisas, acha que "deu", e devolve — mas existiam quinze. A correção é o <strong class="text-purple-400">loop-until-dry</strong>:
+        rode a frota em rodadas, e só <strong class="text-purple-400">pare quando K rodadas seguidas voltarem vazias</strong> (nada
+        de novo). "Seco" não é "uma rodada sem novidade"; é <strong class="text-purple-400">K rodadas</strong> sem novidade — um
+        amortecedor contra parar no primeiro respiro.
+      </p>
+
+      <!-- TIMELINE -->
+      <div class="space-y-6 mb-6">
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center"><span class="text-purple-400 font-bold">1</span></div>
+          <div class="flex-1 bg-dark-800 rounded-xl p-6 border border-dark-600">
+            <h4 class="font-semibold text-white mb-2">Rodada: despacha a frota</h4>
+            <p class="text-sm text-neutral-400 mb-3">Cada subagente busca na sua fatia.</p>
+            <p class="text-neutral-300 text-sm">A rodada produz um lote de achados novos. Tudo que já apareceu antes é deduplicado contra o acumulado.</p>
+          </div>
+        </div>
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center"><span class="text-purple-400 font-bold">2</span></div>
+          <div class="flex-1 bg-dark-800 rounded-xl p-6 border border-dark-600">
+            <h4 class="font-semibold text-white mb-2">Mede o "ganho" da rodada</h4>
+            <p class="text-sm text-neutral-400 mb-3">Quantos achados <em>inéditos</em> entraram?</p>
+            <p class="text-neutral-300 text-sm">Se entrou achado novo, o contador de rodadas-vazias volta a <strong>zero</strong> e abre nova rodada. A busca ainda está "molhada".</p>
+          </div>
+        </div>
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center"><span class="text-purple-400 font-bold">3</span></div>
+          <div class="flex-1 bg-dark-800 rounded-xl p-6 border border-dark-600">
+            <h4 class="font-semibold text-white mb-2">Rodada vazia → conta para K</h4>
+            <p class="text-sm text-neutral-400 mb-3">Nada novo nesta rodada.</p>
+            <p class="text-neutral-300 text-sm">Incrementa o contador. Só quando ele chega a <strong>K</strong> (ex.: 2 ou 3 vazias seguidas) a busca é declarada <strong>seca</strong> e o estágio termina.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-primary/10 rounded-xl border border-primary/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-primary mb-3 flex items-center"><span class="mr-2">💡</span> Por que K e não 1</h3>
+        <p class="text-neutral-300">Uma rodada vazia pode ser azar (a frota foi olhar nos cantos errados naquela vez). Exigir <strong>K vazias seguidas</strong> evita declarar vitória cedo demais. Em troca, defina um <strong>teto de rodadas</strong> (ex.: máximo 8) para o loop não correr para sempre num caso patológico.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-purple-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">um critério de parada por exaustão: repetir a busca até K rodadas seguidas não trazerem nada novo.</span></div>
+        <div><span class="text-purple-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">é o antídoto contra cobertura rasa — o sistema só descansa quando provou que ficou sem mais o que achar.</span></div>
+        <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">rodada · ganho inédito · contador de vazias · limiar K · teto de segurança.</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 3 — Verificação adversarial -->
+    <section id="topico-3" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">3</span>
+        <h2 class="text-2xl font-bold">⚖️ Verificação adversarial: N céticos refutam</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Achar não é confirmar. Cada achado da frota entra num <strong class="text-purple-400">tribunal</strong>: você dispara
+        <strong class="text-purple-400">N subagentes céticos</strong>, e a tarefa de cada um <em>não</em> é concordar — é
+        <strong class="text-purple-400">tentar derrubar</strong> a afirmação ("ache uma evidência de que isto está errado").
+        Se a <strong class="text-purple-400">maioria</strong> conseguir refutar, o achado <strong class="text-purple-400">morre</strong>.
+        Sobrevive só o que aguentou o ataque. É o oposto de pedir confirmação — pedir confirmação só reforça o viés.
+      </p>
+
+      <!-- SVG tribunal: achado contra N céticos com voto de maioria -->
+      <div class="rounded-2xl border border-purple-500/30 bg-dark-900/40 p-3 sm:p-4 mb-6 overflow-hidden">
+        <svg viewBox="0 0 1000 240" class="w-full h-auto" role="img" aria-label="Um achado no centro é atacado por quatro céticos; três votam refutar e um vota manter; como a maioria refutou, o achado é descartado">
+          <defs>
+            <filter id="m41b-glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <marker id="m41b-ahx" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 L2.4,4.5 Z" fill="#f87171"/></marker>
+          </defs>
+          <!-- achado no centro -->
+          <g filter="url(#m41b-glow)"><rect x="420" y="92" width="160" height="56" rx="14" fill="#1a1230" stroke="#c084fc" stroke-width="2.2"/></g>
+          <text x="500" y="116" text-anchor="middle" fill="#c084fc" font-family="Inter,sans-serif" font-weight="600" font-size="15">achado</text>
+          <text x="500" y="135" text-anchor="middle" fill="#d8b4fe" font-family="Inter,sans-serif" font-size="11.5">"X é verdade"</text>
+          <!-- 4 céticos atacando -->
+          <g fill="none" stroke="#f87171" stroke-width="1.8" opacity="0.6" stroke-dasharray="6 5">
+            <path d="M180,60  L418,104" marker-end="url(#m41b-ahx)"/>
+            <path d="M180,180 L418,136" marker-end="url(#m41b-ahx)"/>
+            <path d="M820,60  L582,104" marker-end="url(#m41b-ahx)"/>
+            <path d="M820,180 L582,136" marker-end="url(#m41b-ahx)"/>
+          </g>
+          <g font-family="Inter,sans-serif" font-size="12" font-weight="600">
+            <g class="wf-a"><rect x="70" y="44"  width="120" height="34" rx="9" fill="#1a1230" stroke="#c084fc" stroke-width="2"/><text x="130" y="65"  text-anchor="middle" fill="#e9d5ff">cético 1</text></g>
+            <g class="wf-a"><rect x="70" y="162" width="120" height="34" rx="9" fill="#1a1230" stroke="#c084fc" stroke-width="2"/><text x="130" y="183" text-anchor="middle" fill="#e9d5ff">cético 2</text></g>
+            <g class="wf-a"><rect x="810" y="44"  width="120" height="34" rx="9" fill="#1a1230" stroke="#c084fc" stroke-width="2"/><text x="870" y="65"  text-anchor="middle" fill="#e9d5ff">cético 3</text></g>
+            <g class="wf-a"><rect x="810" y="162" width="120" height="34" rx="9" fill="#1a1230" stroke="#c084fc" stroke-width="2"/><text x="870" y="183" text-anchor="middle" fill="#e9d5ff">cético 4</text></g>
+          </g>
+          <!-- votos -->
+          <text x="130" y="96"  text-anchor="middle" fill="#f87171" font-family="Inter,sans-serif" font-size="11">refuta ✗</text>
+          <text x="130" y="150" text-anchor="middle" fill="#f87171" font-family="Inter,sans-serif" font-size="11">refuta ✗</text>
+          <text x="870" y="96"  text-anchor="middle" fill="#f87171" font-family="Inter,sans-serif" font-size="11">refuta ✗</text>
+          <text x="870" y="150" text-anchor="middle" fill="#34d399" font-family="Inter,sans-serif" font-size="11">mantém ✓</text>
+          <!-- veredito -->
+          <text x="500" y="186" text-anchor="middle" fill="#f87171" font-family="Inter,sans-serif" font-weight="600" font-size="13">3 de 4 refutam → maioria</text>
+          <text x="500" y="208" text-anchor="middle" fill="#f87171" font-family="Inter,sans-serif" font-size="12">veredito: descarta o achado</text>
+        </svg>
+      </div>
+
+      <!-- GRID ✓/✗ #1 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-purple-900/20 rounded-xl border border-purple-500/30 p-6">
+          <h4 class="font-bold text-purple-400 mb-4">✓ Verificação adversarial (faça)</h4>
+          <ul class="space-y-3 text-neutral-300">
+            <li class="flex items-start space-x-2"><span class="text-purple-400">✓</span><span>Instruir o cético a <strong>procurar o erro</strong>, não a confirmar</span></li>
+            <li class="flex items-start space-x-2"><span class="text-purple-400">✓</span><span>Usar <strong>N céticos independentes</strong> e decidir por maioria</span></li>
+            <li class="flex items-start space-x-2"><span class="text-purple-400">✓</span><span>Exigir que cada refutação aponte <strong>evidência</strong>, não opinião</span></li>
+            <li class="flex items-start space-x-2"><span class="text-purple-400">✓</span><span>Deixar passar só o que <strong>sobreviveu</strong> ao ataque</span></li>
+          </ul>
+        </div>
+        <div class="bg-red-900/20 rounded-xl border border-red-500/30 p-6">
+          <h4 class="font-bold text-red-400 mb-4">✗ Verificação ingênua (evite)</h4>
+          <ul class="space-y-3 text-neutral-300">
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Perguntar "isto está certo?" (puxa concordância)</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Um único verificador (vira ponto único de viés)</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>O mesmo agente que achou ser quem valida</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Aceitar tudo que "parece plausível"</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-purple-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">um filtro de qualidade onde vários céticos tentam derrubar cada achado e a maioria decide se ele morre.</span></div>
+        <div><span class="text-purple-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">é o que separa "uma busca confiante" de "uma resposta confiável" — refutar é mais honesto que confirmar.</span></div>
+        <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">ônus da refutação · independência · voto de maioria · evidência sobre opinião.</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 4 — Perspectivas diversas -->
+    <section id="topico-4" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">4</span>
+        <h2 class="text-2xl font-bold">🔭 Perspectivas diversas: lentes diferentes</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Uma frota de subagentes <strong class="text-purple-400">idênticos</strong> comete os mesmos erros em coro — todos olham
+        para o mesmo lugar e ignoram o mesmo ponto cego. A correção é dar a cada subagente uma <strong class="text-purple-400">lente
+        diferente</strong>: o mesmo material, papéis distintos. Um caça contradições, outro caça o que está faltando, outro lê pela
+        ótica de custo, outro pela de segurança. <strong class="text-purple-400">Diversidade de lente = diversidade de erro
+        encontrado.</strong> É a mesma ideia das 5 personas da Trilha 1, agora como peça de arquitetura.
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+          <div class="text-2xl mb-2">🧱</div>
+          <h4 class="font-semibold text-purple-400 mb-1">Lente da contradição</h4>
+          <p class="text-neutral-300 text-sm">"Onde dois achados se contradizem? Qual deles tem que estar errado?"</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+          <div class="text-2xl mb-2">🕳️</div>
+          <h4 class="font-semibold text-purple-400 mb-1">Lente da lacuna</h4>
+          <p class="text-neutral-300 text-sm">"O que deveria existir e não apareceu? Que pergunta ninguém fez?"</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+          <div class="text-2xl mb-2">💸</div>
+          <h4 class="font-semibold text-purple-400 mb-1">Lente do custo</h4>
+          <p class="text-neutral-300 text-sm">"Quanto isto custa na prática? O que muda quando o orçamento aperta?"</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+          <div class="text-2xl mb-2">🛡️</div>
+          <h4 class="font-semibold text-purple-400 mb-1">Lente do risco</h4>
+          <p class="text-neutral-300 text-sm">"Onde isto quebra? Qual o pior caso? O que um adversário exploraria?"</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+          <div class="text-2xl mb-2">📏</div>
+          <h4 class="font-semibold text-purple-400 mb-1">Lente da escala</h4>
+          <p class="text-neutral-300 text-sm">"Funciona com 10? E com 10 milhões? Onde a abordagem deixa de servir?"</p>
+        </div>
+        <div class="bg-purple-900/20 rounded-xl p-5 border border-purple-500/30 flex flex-col justify-center">
+          <div class="text-2xl mb-2">🌈</div>
+          <h4 class="font-semibold text-purple-400 mb-1">Soma das lentes</h4>
+          <p class="text-neutral-300 text-sm">Cada lente acha um defeito que as outras não veem. Juntas, cobrem o que uma frota uniforme deixaria escapar.</p>
+        </div>
+      </div>
+
+      <div class="bg-blue-900/20 rounded-xl border border-blue-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-blue-400 mb-3 flex items-center"><span class="mr-2">📊</span> Diversidade &gt; quantidade</h3>
+        <p class="text-neutral-300">Dez subagentes com a <strong>mesma</strong> lente acham, na prática, quase o que um acharia — só mais rápido. Cinco com lentes <strong>diferentes</strong> acham coisas que nenhum dos dez veria. Ao escalar, varie a lente antes de aumentar o número.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-purple-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">atribuir papéis/óticas distintas a subagentes que olham o mesmo material.</span></div>
+        <div><span class="text-purple-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">elimina o ponto cego coletivo de uma frota homogênea — cada lente cobre uma falha das outras.</span></div>
+        <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">lente/persona · ponto cego coletivo · diversidade antes de quantidade · cobertura complementar.</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 5 — Completeness critic -->
+    <section id="topico-5" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">5</span>
+        <h2 class="text-2xl font-bold">🧮 Completeness critic: o que ainda falta?</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Loop-until-dry te diz quando a frota <em>parou de achar</em>. Mas "parou de achar" não é "achou tudo o que importa" — pode
+        ter ficado um buraco inteiro inexplorado. Entra o <strong class="text-purple-400">completeness critic</strong>: um subagente
+        cuja única missão é olhar o conjunto reunido e perguntar <strong class="text-purple-400">"o que ainda falta?"</strong>.
+        Ele não busca; ele <strong class="text-purple-400">aponta os buracos</strong>. Cada buraco que ele aponta vira uma nova
+        rodada de busca direcionada — fechando o ciclo entre verificar e buscar de novo.
+      </p>
+
+      <!-- CODE BOX: relatório do completeness critic -->
+      <div class="bg-dark-800 rounded-xl border border-dark-600 p-6 mb-6">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs uppercase tracking-wide text-neutral-500">saída do completeness-critic</span>
+          <span class="text-xs text-purple-400">lacunas → novas buscas</span>
+        </div>
+        <pre class="font-mono text-sm text-neutral-300 overflow-x-auto leading-relaxed"><code><span class="text-neutral-500"># Pergunta única do crítico: "o que ainda falta?"</span>
+
+<span class="text-purple-400">COBERTO   </span> ✓ definição do conceito
+<span class="text-purple-400">COBERTO   </span> ✓ 3 casos de uso confirmados
+<span class="text-purple-400">COBERTO   </span> ✓ limites conhecidos
+
+<span class="text-red-400">LACUNA    </span> ✗ nenhuma fonte sobre <span class="text-cyan-400">custo em produção</span>
+<span class="text-red-400">LACUNA    </span> ✗ nada sobre <span class="text-cyan-400">o que muda fora do Claude Code</span>
+<span class="text-red-400">LACUNA    </span> ✗ zero <span class="text-cyan-400">contra-exemplos</span> (só casos de sucesso)
+
+<span class="text-neutral-500"># → o harness abre 3 buscas direcionadas para</span>
+<span class="text-neutral-500">#   fechar exatamente estas lacunas e roda de novo.</span></code></pre>
+      </div>
+
+      <div class="bg-primary/10 rounded-xl border border-primary/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-primary mb-3 flex items-center"><span class="mr-2">💡</span> Buscar é diferente de criticar</h3>
+        <p class="text-neutral-300">Quem busca tende a parar satisfeito com o que achou. Por isso o crítico de completude é um <strong>subagente separado, com contexto fresco</strong> — ele chega sem o apego do buscador a "já achei bastante" e enxerga o vazio que o buscador normaliza. É o mesmo princípio do revisor imparcial, aplicado à <em>cobertura</em>.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-purple-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">um avaliador dedicado que mapeia lacunas no conjunto reunido em vez de buscar mais.</span></div>
+        <div><span class="text-purple-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">"parou de achar" não é "está completo"; o crítico converte buracos em buscas direcionadas.</span></div>
+        <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">cobertura × exaustão · lacuna como tarefa · contexto fresco · realimentação para o find.</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 6 — Sem cap silencioso -->
+    <section id="topico-6" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">6</span>
+        <h2 class="text-2xl font-bold">📋 Sem cap silencioso: logar o que cortou</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Todo sistema em escala tem limites — de tokens, de tempo, de número de itens. O problema não é cortar; é
+        <strong class="text-purple-400">cortar em silêncio</strong>. Se a frota achou 500 itens e o sistema só processa 50 sem
+        avisar, você recebe um relatório que <em>parece</em> completo e <strong class="text-purple-400">não é</strong> — e nunca vai
+        saber. A regra de ouro: <strong class="text-purple-400">nenhum corte silencioso</strong>. Cortou? Loga: o que foi cortado,
+        quanto, e por qual critério. O usuário precisa ver a borda do mapa.
+      </p>
+
+      <!-- GRID ✓/✗ #2 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-purple-900/20 rounded-xl border border-purple-500/30 p-6">
+          <h4 class="font-bold text-purple-400 mb-4">✓ Corte honesto</h4>
+          <ul class="space-y-3 text-neutral-300">
+            <li class="flex items-start space-x-2"><span class="text-purple-400">✓</span><span>"Processei 50 de <strong>500</strong> achados (top por relevância)"</span></li>
+            <li class="flex items-start space-x-2"><span class="text-purple-400">✓</span><span>Registra o <strong>critério</strong> do corte (relevância, data, escopo)</span></li>
+            <li class="flex items-start space-x-2"><span class="text-purple-400">✓</span><span>Guarda o que sobrou para uma rodada futura</span></li>
+            <li class="flex items-start space-x-2"><span class="text-purple-400">✓</span><span>Deixa o usuário <strong>decidir</strong> se quer ir além do teto</span></li>
+          </ul>
+        </div>
+        <div class="bg-red-900/20 rounded-xl border border-red-500/30 p-6">
+          <h4 class="font-bold text-red-400 mb-4">✗ Cap silencioso</h4>
+          <ul class="space-y-3 text-neutral-300">
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Trunca em 50 e <strong>não avisa</strong> que havia mais</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Relatório parece completo, mas é uma fatia</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Descarta os outros 450 sem deixar rastro</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Decisão de cobertura tomada <strong>por você sem você</strong></span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-red-900/20 rounded-xl border border-red-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-red-400 mb-3 flex items-center"><span class="mr-2">⚠️</span> O erro mais perigoso da escala</h3>
+        <p class="text-neutral-300">É o único erro desta lista que <strong>não dá sinal</strong>. Uma busca rasa você percebe; um achado falso o tribunal mata; mas um cap silencioso entrega um relatório <em>plausível e incompleto</em> que ninguém questiona. Por isso a regra é dura: <strong>se cortou, apareça no log</strong> — sempre, mesmo quando o corte parece óbvio.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-purple-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">a disciplina de tornar todo truncamento visível — registrar o que, o quanto e o porquê do corte.</span></div>
+        <div><span class="text-purple-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">cortes invisíveis produzem respostas falsamente completas; o log devolve a decisão de cobertura ao usuário.</span></div>
+        <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">truncamento explícito · critério do corte · rastro auditável · "borda do mapa" visível.</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 7 — Sintetizar -->
+    <section id="topico-7" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">7</span>
+        <h2 class="text-2xl font-bold">🧬 Sintetizar: o relatório que fecha o pipeline</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        No fim, alguém tem que <strong class="text-purple-400">juntar tudo</strong> — mas juntar não é colar. O sintetizador recebe
+        só os achados que <strong class="text-purple-400">sobreviveram</strong> ao tribunal, depois das lacunas fechadas, com o log de
+        cortes em mãos, e produz <strong class="text-purple-400">uma narrativa coesa</strong>: dedup, agrupa por tema, resolve
+        conflitos restantes, cita a origem de cada afirmação e <strong class="text-purple-400">declara o que ficou de fora</strong>.
+        O relatório final é a única coisa que volta para você — limpo, como manda o modelo do subagente.
+      </p>
+
+      <!-- CODE BOX: estrutura do relatório sintetizado -->
+      <div class="bg-dark-800 rounded-xl border border-dark-600 p-6 mb-6">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs uppercase tracking-wide text-neutral-500">relatorio-final.md (forma sintetizada)</span>
+          <span class="text-xs text-purple-400">só sobreviventes + log</span>
+        </div>
+        <pre class="font-mono text-sm text-neutral-300 overflow-x-auto leading-relaxed"><code><span class="text-purple-400"># Síntese: &lt;pergunta original&gt;</span>
+
+<span class="text-cyan-400">## Conclusões (sobreviveram ao tribunal)</span>
+- &lt;afirmação A&gt;  <span class="text-neutral-500">[fonte: f1, f7 · 4/4 céticos mantiveram]</span>
+- &lt;afirmação B&gt;  <span class="text-neutral-500">[fonte: f3 · 3/4 mantiveram]</span>
+
+<span class="text-cyan-400">## Conflitos resolvidos</span>
+- A vs. C → C caiu (refutado por evidência em f9)
+
+<span class="text-red-400">## O que ficou de fora (sem cap silencioso)</span>
+- 500 achados → 38 processados (top por relevância)
+- lacuna ainda aberta: custo em produção (0 fontes)
+
+<span class="text-cyan-400">## Confiança</span>
+- alta nos itens 4/4; média nos 3/4; baixa onde há 1 fonte</code></pre>
+      </div>
+
+      <div class="bg-blue-900/20 rounded-xl border border-blue-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-blue-400 mb-3 flex items-center"><span class="mr-2">📊</span> Síntese carrega o rastro</h3>
+        <p class="text-neutral-300">Um bom relatório não esconde o processo: cada conclusão traz <strong>quantos céticos a mantiveram</strong> e <strong>de onde veio</strong>, e há uma seção honesta de "o que ficou de fora". É isso que transforma uma pilha de achados num documento em que dá para confiar — e auditar.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-purple-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">o estágio que funde os achados sobreviventes num relatório citado, com conflitos resolvidos e cortes declarados.</span></div>
+        <div><span class="text-purple-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">é o ponto onde escala vira entrega — sem síntese, você só tem uma pilha de pedaços.</span></div>
+        <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">dedup + agrupamento · citação de origem · resolução de conflito · grau de confiança · relatório limpo.</span></div>
+      </div>
+    </section>
+
+    <!-- BLOCO: EXEMPLO REAL (esqueleto de harness em pseudo) -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">📄</span>
+        <h2 class="text-2xl font-bold">Exemplo: o esqueleto de um harness</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Um <strong class="text-purple-400">harness</strong> é o código (ou a skill) que orquestra a frota — o "almirante" feito
+        programa. Você não precisa escrever isto em nenhuma linguagem específica agora; o que importa é
+        <strong class="text-purple-400">reconhecer a forma</strong>. Abaixo, o esqueleto em pseudocódigo: os sete tópicos deste
+        módulo aparecem como passos de uma função. Leia como uma receita, não como código pronto.
+      </p>
+
+      <div class="bg-dark-800 rounded-xl border border-dark-600 p-6 mb-6">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs uppercase tracking-wide text-neutral-500">harness.pseudo — orquestração da frota</span>
+          <span class="text-xs text-blue-400">pseudocódigo (ilustrativo)</span>
+        </div>
+        <pre class="font-mono text-sm text-neutral-300 overflow-x-auto leading-relaxed"><code><span class="text-purple-400">função</span> pesquisar_em_escala(pergunta, K=2, max_rodadas=8, N_ceticos=4):
+    achados        = conjunto()      <span class="text-neutral-500"># dedup automático</span>
+    rodadas_vazias = 0
+    log_cortes     = []
+
+    <span class="text-cyan-400"># ── 1+2 · FIND em loop-until-dry ──────────────────────</span>
+    <span class="text-purple-400">enquanto</span> rodadas_vazias &lt; K <span class="text-purple-400">e</span> rodada &lt; max_rodadas:
+        fatias = particionar(pergunta, achados)        <span class="text-neutral-500"># tópico 1: frota</span>
+        novos  = frota_paralela(BUSCADOR, fatias)      <span class="text-neutral-500"># cada um, uma lente (tópico 4)</span>
+        ineditos = novos - achados
+        <span class="text-purple-400">se</span> ineditos vazio: rodadas_vazias += 1
+        <span class="text-purple-400">senão</span>:           rodadas_vazias = 0; achados |= ineditos
+
+    <span class="text-cyan-400"># ── 3 · VERIFY adversarial (mata por maioria) ─────────</span>
+    <span class="text-purple-400">para cada</span> a <span class="text-purple-400">em</span> achados:
+        votos = frota_paralela(CETICO, repetir(a, N_ceticos))  <span class="text-neutral-500"># "ache o erro"</span>
+        <span class="text-purple-400">se</span> maioria(votos) == "refuta": achados.remove(a)
+
+    <span class="text-cyan-400"># ── 5 · COMPLETENESS critic → realimenta o find ───────</span>
+    lacunas = subagente(CRITICO_COMPLETUDE, achados)    <span class="text-neutral-500"># "o que falta?"</span>
+    <span class="text-purple-400">se</span> lacunas: <span class="text-purple-400">retornar</span> pesquisar_em_escala(focar(pergunta, lacunas), K, ...)
+
+    <span class="text-cyan-400"># ── 6 · SEM CAP SILENCIOSO ────────────────────────────</span>
+    <span class="text-purple-400">se</span> tamanho(achados) &gt; TETO:
+        log_cortes.append(f"processados {{TETO}} de {{tamanho(achados)}} (top relevância)")
+        achados = top(achados, TETO)
+
+    <span class="text-cyan-400"># ── 7 · SYNTHESIZE (única saída p/ o maestro) ─────────</span>
+    <span class="text-purple-400">retornar</span> subagente(SINTETIZADOR, achados, log_cortes)  <span class="text-neutral-500"># relatório citado</span></code></pre>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <h4 class="font-semibold text-purple-400 mb-3">🧠 O que o harness garante</h4>
+          <ul class="space-y-2 text-neutral-300 text-sm">
+            <li><strong class="text-purple-400">Profundidade</strong> — o loop só sai quando seca (K vazias).</li>
+            <li><strong class="text-purple-400">Confiabilidade</strong> — todo achado passa pelo tribunal.</li>
+            <li><strong class="text-purple-400">Completude</strong> — o crítico realimenta o find com as lacunas.</li>
+            <li><strong class="text-purple-400">Honestidade</strong> — todo corte vira linha de log.</li>
+          </ul>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <h4 class="font-semibold text-purple-400 mb-3">⚙️ Os parâmetros que você ajusta</h4>
+          <ul class="space-y-2 text-neutral-300 text-sm">
+            <li><strong class="text-purple-400">K</strong> — quantas rodadas vazias até declarar seco.</li>
+            <li><strong class="text-purple-400">max_rodadas</strong> — teto para o loop não correr para sempre.</li>
+            <li><strong class="text-purple-400">N_céticos</strong> — quantos refutam cada achado.</li>
+            <li><strong class="text-purple-400">TETO</strong> — limite explícito, sempre logado quando atingido.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOCO: PROMPTS PRONTOS -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">⌨️</span>
+        <h2 class="text-2xl font-bold">Prompts prontos (copie e cole)</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Três prompts para impor a doutrina deste módulo a uma frota — mesmo sem escrever um harness. Repare no padrão: peça
+        <strong class="text-purple-400">exaustão</strong>, peça <strong class="text-purple-400">refutação</strong> e proíba o
+        <strong class="text-purple-400">corte silencioso</strong>.
+      </p>
+
+      <div class="space-y-4">
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-purple-400">Prompt 1 — buscar até secar</span>
+            <span class="text-xs text-neutral-500">loop-until-dry</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>Dispare uma frota de subagentes para levantar TUDO sobre
+&lt;tema&gt;. Rode em rodadas e só pare quando 2 rodadas
+seguidas não trouxerem nada novo. No fim, diga quantas
+rodadas rodou e por que considerou a busca esgotada.</code></pre>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-purple-400">Prompt 2 — verificar adversarialmente</span>
+            <span class="text-xs text-neutral-500">N céticos, maioria</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>Para cada achado, abra 4 subagentes céticos cuja missão
+é TENTAR REFUTÁ-LO com evidência (não confirmar). Se a
+maioria refutar, descarte o achado. Me entregue só os
+que sobreviveram, com a contagem de votos de cada um.</code></pre>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-purple-400">Prompt 3 — sintetizar sem cortar em silêncio</span>
+            <span class="text-xs text-neutral-500">completeness + log</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>Antes de fechar, rode um crítico que liste o que ainda
+falta e abra buscas para as lacunas. Depois sintetize um
+relatório citado. Se você cortar QUALQUER coisa por
+limite, registre o que cortou, quanto e por qual critério.</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOCO: TELA SIMULADA (monitor-mock do harness rodando) -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">🖥️</span>
+        <h2 class="text-2xl font-bold">Tela simulada: o harness rodando uma frota</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        É assim que a operação aparece no terminal: o harness está na <strong class="text-purple-400">rodada 3 do find</strong>, com
+        uma frota de buscadores e céticos em paralelo. Note o <strong class="text-purple-400">contador de rodadas vazias</strong>
+        (1/2 — ainda não secou), os céticos derrubando achados e, na base, a <strong class="text-purple-400">linha de log do corte</strong>
+        — visível, nunca silenciosa.
+      </p>
+
+      <div class="rounded-xl border border-dark-600 bg-dark-900 overflow-hidden mb-2">
+        <!-- barra de título -->
+        <div class="flex items-center justify-between px-4 py-2 bg-dark-700/60 border-b border-dark-600">
+          <div class="flex items-center space-x-2"><span class="w-3 h-3 rounded-full bg-red-400/70"></span><span class="w-3 h-3 rounded-full bg-amber-400/70"></span><span class="w-3 h-3 rounded-full bg-emerald-400/70"></span></div>
+          <span class="text-xs text-neutral-400 font-mono">claude code · harness:pesquisa-em-escala · rodada 3</span>
+          <span class="text-xs text-purple-400 font-mono">⏱ 02:17</span>
+        </div>
+        <!-- corpo -->
+        <div class="p-4 space-y-3 font-mono text-xs">
+          <div class="text-cyan-400">━━ FIND · frota de buscadores ━━━━━━━━━━━━━━━━━━━━━━━</div>
+          <div class="flex items-center gap-3"><span class="text-purple-400 w-44 shrink-0">● buscador · docs</span><span class="text-neutral-500 w-14 shrink-0">Haiku</span><div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill h-full bg-purple-500/70" style="width:78%"></div></div><span class="text-neutral-400 w-24 text-right shrink-0">+12 inéditos</span></div>
+          <div class="flex items-center gap-3"><span class="text-purple-400 w-44 shrink-0">● buscador · código</span><span class="text-neutral-500 w-14 shrink-0">Haiku</span><div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b2 h-full bg-purple-500/70" style="width:55%"></div></div><span class="text-neutral-400 w-24 text-right shrink-0">+3 inéditos</span></div>
+          <div class="flex items-center gap-3"><span class="text-purple-400 w-44 shrink-0">● buscador · web</span><span class="text-neutral-500 w-14 shrink-0">Haiku</span><div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b3 h-full bg-purple-500/70" style="width:90%"></div></div><span class="text-neutral-400 w-24 text-right shrink-0">+0 inéditos</span></div>
+          <div class="text-neutral-500 pl-2">rodadas vazias: <span class="text-purple-400">1/2</span> · ainda não secou → abre rodada 4</div>
+          <div class="text-cyan-400 pt-1">━━ VERIFY · tribunal adversarial ━━━━━━━━━━━━━━━━━━━</div>
+          <div class="flex items-center gap-3"><span class="text-purple-400 w-44 shrink-0">● 4 céticos · achado #18</span><span class="text-neutral-500 w-14 shrink-0">Sonnet</span><div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b4 h-full bg-purple-500/70" style="width:100%"></div></div><span class="text-red-400 w-24 text-right shrink-0">3/4 refuta ✗</span></div>
+          <div class="flex items-center gap-3"><span class="text-purple-400 w-44 shrink-0">● 4 céticos · achado #22</span><span class="text-neutral-500 w-14 shrink-0">Sonnet</span><div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b5 h-full bg-purple-500/70" style="width:100%"></div></div><span class="text-emerald-400 w-24 text-right shrink-0">4/4 mantém ✓</span></div>
+          <div class="text-amber-400 pt-1">⚠ log: 214 achados → 50 processados (top por relevância) · 164 guardados</div>
+        </div>
+        <!-- status line -->
+        <div class="flex items-center justify-between px-4 py-2 bg-dark-800 border-t border-dark-600 font-mono text-xs">
+          <span class="text-neutral-400">maestro · Opus</span>
+          <div class="flex items-center gap-2">
+            <span class="text-neutral-500">seu contexto</span>
+            <div class="w-28 h-2 rounded bg-dark-700 overflow-hidden"><div class="h-full bg-purple-500/70" style="width:9%"></div></div>
+            <span class="text-purple-400">9%</span>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-neutral-500">↑ Recriação ilustrativa do terminal (não é screenshot real). A frota queima contexto nas janelas dela; a sua mal se move — e o corte de 214→50 está no log, à vista.</p>
+    </section>
+
+    <!-- BLOCO: EXERCÍCIO -->
+    <section class="mb-12">
+      <div class="bg-gradient-to-br from-purple-900/30 to-dark-800 rounded-xl border border-purple-500/30 p-8">
+        <div class="flex items-center space-x-4 mb-6">
+          <span class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 font-bold text-xl">🎯</span>
+          <h2 class="text-2xl font-bold">Exercício: desenhe um loop-until-dry</h2>
+        </div>
+        <p class="text-neutral-300 mb-6 leading-relaxed">
+          Escolha um problema real de cobertura ampla (ex.: <em>"encontrar todos os lugares do meu código que tocam pagamentos"</em>
+          ou <em>"levantar tudo o que sei sobre o concorrente X"</em>) e <strong class="text-purple-400">desenhe no papel o harness</strong>
+          que o resolveria com a doutrina deste módulo. Não precisa rodar nada — o entregável é o desenho do laço e suas regras.
+        </p>
+
+        <div class="bg-dark-800/60 rounded-lg p-5 mb-6">
+          <h4 class="font-semibold text-purple-400 mb-3">Como fazer</h4>
+          <ol class="space-y-2 text-neutral-300 text-sm list-decimal list-inside">
+            <li>Defina <strong>como particionar</strong> o problema entre a frota (por pasta? por fonte? por subtema?).</li>
+            <li>Escolha o <strong>K</strong> (quantas rodadas vazias até secar) e um <strong>teto de rodadas</strong>.</li>
+            <li>Escreva a regra de <strong>verificação adversarial</strong>: quantos céticos, e como a maioria decide.</li>
+            <li>Defina o <strong>completeness critic</strong>: que pergunta ele faz e o que vira nova busca.</li>
+            <li>Diga onde está o <strong>teto de corte</strong> e exatamente <strong>o que você vai logar</strong> quando cortar.</li>
+          </ol>
+        </div>
+
+        <div class="bg-blue-900/20 rounded-xl border border-blue-500/30 p-6 mb-6">
+          <h4 class="font-semibold text-blue-400 mb-3">✅ Critério de verificação — como saber que acertou</h4>
+          <p class="text-neutral-300 text-sm mb-3">Seu desenho está correto se um leitor consegue responder, só olhando para ele, às cinco perguntas:</p>
+          <ul class="space-y-2 text-neutral-300 text-sm">
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">→</span><span><strong>Quando para?</strong> A condição de parada é "K rodadas vazias", não "uma rodada" nem "deu tempo".</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">→</span><span><strong>Como confia?</strong> Há refutação por maioria, não "perguntar se está certo".</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">→</span><span><strong>Como sabe que está completo?</strong> Existe um crítico de lacunas que realimenta a busca.</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">→</span><span><strong>O que foi cortado?</strong> Há um ponto explícito de log — nenhum corte é silencioso.</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">→</span><span><strong>O que volta?</strong> Uma síntese citada, não a pilha bruta de achados.</span></li>
+          </ul>
+          <p class="text-neutral-300 text-sm mt-3">Se faltar qualquer um dos cinco, o desenho ainda não é uma arquitetura em escala — é só "vários subagentes soltos".</p>
+        </div>
+
+        <div class="bg-dark-800/60 rounded-lg p-5">
+          <h4 class="font-semibold text-purple-400 mb-3">Exemplo resolvido (resumido)</h4>
+          <p class="text-neutral-300 text-sm"><strong>Problema:</strong> achar tudo que toca pagamentos no repo. <strong class="text-purple-400">Partição:</strong> uma fatia por diretório de topo. <strong class="text-purple-400">K=2</strong>, teto 6 rodadas. <strong class="text-purple-400">Verify:</strong> 3 céticos por achado, maioria refuta → fora. <strong class="text-purple-400">Crítico:</strong> "que fluxo de pagamento não aparece em nenhum achado?" → vira busca dirigida. <strong class="text-purple-400">Corte:</strong> teto 80 trechos; se passar, log "processados 80 de N". <strong class="text-purple-400">Saída:</strong> lista citada por arquivo + seção "não coberto".</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESUMO / NAVEGAÇÃO -->
+    <section class="mb-12">
+      <div class="bg-gradient-to-br from-purple-900/40 via-dark-800 to-dark-800 rounded-xl border border-purple-500/30 p-8">
+        <h2 class="text-2xl font-bold mb-6 flex items-center"><span class="mr-3">✅</span> Resumo do módulo</h2>
+
+        <div class="space-y-4 mb-8">
+          <div class="flex items-start space-x-3"><span class="text-purple-400 mt-1">✓</span><div><strong class="text-white">Frota</strong><span class="text-neutral-400"> — muitos subagentes do mesmo papel em fatias do problema; o sistema é a unidade de raciocínio.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-purple-400 mt-1">✓</span><div><strong class="text-white">Loop-until-dry</strong><span class="text-neutral-400"> — repete até K rodadas seguidas voltarem vazias; "seco", não "uma rodada".</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-purple-400 mt-1">✓</span><div><strong class="text-white">Verificação adversarial</strong><span class="text-neutral-400"> — N céticos tentam refutar; se a maioria derruba, o achado morre.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-purple-400 mt-1">✓</span><div><strong class="text-white">Perspectivas diversas</strong><span class="text-neutral-400"> — lentes diferentes cobrem o ponto cego de uma frota uniforme.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-purple-400 mt-1">✓</span><div><strong class="text-white">Completeness critic</strong><span class="text-neutral-400"> — pergunta "o que falta?" e converte lacunas em novas buscas.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-purple-400 mt-1">✓</span><div><strong class="text-white">Sem cap silencioso</strong><span class="text-neutral-400"> — todo corte vira log: o quê, quanto, por qual critério.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-purple-400 mt-1">✓</span><div><strong class="text-white">Sintetizar</strong><span class="text-neutral-400"> — junta só os sobreviventes num relatório citado, com conflitos resolvidos e cortes declarados.</span></div></div>
+        </div>
+
+        <div class="bg-dark-800/50 rounded-lg p-4 mb-8">
+          <h3 class="font-semibold text-purple-400 mb-2">Próximo módulo:</h3>
+          <p class="text-neutral-300">4.2 — Subagentes no Codex e outros ambientes. O mesmo conceito fora do Claude Code: equivalências, cross-runtime e o que muda.</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="index.html" class="flex-1 text-center px-6 py-3 bg-dark-700 text-neutral-300 rounded-lg font-semibold hover:bg-dark-600 transition-colors">← Voltar ao índice da trilha</a>
+          <a href="modulo-4-2.html" class="flex-1 text-center px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-500 transition-colors">Próximo módulo →</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-dark-600 py-8 mt-16">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-neutral-500 text-sm">
+      <p class="mb-2">Subagentes — 2026 · um curso no formato
+        <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 font-medium">INEMA.CLUB</a>
+      </p>
+      <p>Trilha 4 · Avançado &amp; cross-ambiente · Módulo 4.1</p>
+    </div>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script>
+    // Toggle de tópicos (compatível com o padrão; expansíveis ficam abertos por padrão nesta página de módulo)
+    function toggleTopic(button) {
+      const topicItem = button.closest('.topic-item');
+      if (!topicItem) return;
+      const explanation = topicItem.querySelector('.topic-explanation');
+      const moduleCard = button.closest('.bg-dark-800');
+      if (moduleCard) {
+        moduleCard.querySelectorAll('.topic-explanation.active').forEach(exp => {
+          if (exp !== explanation) exp.classList.remove('active');
+        });
+      }
+      if (explanation) explanation.classList.toggle('active');
+    }
+
+    // Theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+    const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+    const html = document.documentElement;
+
+    if (localStorage.getItem('theme') === 'light' || (!localStorage.getItem('theme') && !html.classList.contains('dark'))) {
+      themeToggleDarkIcon.classList.remove('hidden');
+      html.classList.remove('dark');
+    } else {
+      themeToggleLightIcon.classList.remove('hidden');
+    }
+
+    themeToggle.addEventListener('click', () => {
+      themeToggleDarkIcon.classList.toggle('hidden');
+      themeToggleLightIcon.classList.toggle('hidden');
+      html.classList.toggle('dark');
+      localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+    });
+  </script>
+
+</body>
+</html>
