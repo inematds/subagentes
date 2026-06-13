@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workflows dinâmicos | Subagentes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#FACC15',
+            dark: { 900: '#111827', 800: '#1f2937', 700: '#374151', 600: '#4b5563' }
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .dark body { background-color: #111827; }
+    .topic-explanation { display: none; }
+    .topic-explanation.active { display: block; }
+
+    /* Light mode overrides - OBRIGATORIO (base) */
+    html:not(.dark) body { background-color: #f8fafc; }
+    html:not(.dark) .bg-dark-900 { background-color: #ffffff; }
+    html:not(.dark) .bg-dark-800 { background-color: #f9fafb; }
+    html:not(.dark) .bg-dark-700 { background-color: #f3f4f6; }
+    html:not(.dark) .bg-dark-600 { background-color: #e5e7eb; }
+    html:not(.dark) .text-neutral-100 { color: #111827; }
+    html:not(.dark) .text-neutral-300 { color: #4b5563; }
+    html:not(.dark) .text-neutral-400 { color: #6b7280; }
+    html:not(.dark) .text-neutral-500 { color: #9ca3af; }
+    html:not(.dark) .border-dark-600 { border-color: #d1d5db; }
+    html:not(.dark) .border-dark-700 { border-color: #e5e7eb; }
+
+    /* Bordas suavizadas dark (REGRA OBRIGATORIA — 2 regras) */
+    .dark .border-dark-600 { border-color: #374151; }
+    .dark .divide-dark-600 > :not([hidden]) ~ :not([hidden]) { border-color: #374151; }
+
+    /* Light mode - cores de acento (trilha amber T3) */
+    html:not(.dark) .text-amber-400 { color: #b45309; }
+    html:not(.dark) .bg-amber-500\/20 { background-color: rgba(180, 83, 9, 0.12); }
+    html:not(.dark) .bg-amber-500\/10 { background-color: rgba(180, 83, 9, 0.08); }
+    html:not(.dark) .border-amber-500\/30 { border-color: rgba(180, 83, 9, 0.25); }
+    html:not(.dark) .hover\:bg-amber-500\/30:hover { background-color: rgba(180, 83, 9, 0.18); }
+    html:not(.dark) .hover\:text-amber-400:hover { color: #b45309; }
+    html:not(.dark) .hover\:bg-amber-500\/10:hover { background-color: rgba(180, 83, 9, 0.08); }
+    html:not(.dark) .bg-amber-900\/30 { background-color: rgba(120, 53, 15, 0.10); }
+    html:not(.dark) .bg-amber-900\/20 { background-color: rgba(120, 53, 15, 0.08); }
+    html:not(.dark) .from-amber-900\/30 { --tw-gradient-from: rgba(120,53,15,.1); }
+
+    /* Light mode - cores de apoio */
+    html:not(.dark) .text-sky-400 { color: #0369a1; }
+    html:not(.dark) .text-sky-300 { color: #0284c7; }
+    html:not(.dark) .hover\:text-sky-300:hover { color: #0284c7; }
+    html:not(.dark) .text-blue-400 { color: #2563eb; }
+    html:not(.dark) .bg-blue-900\/20 { background-color: rgba(37, 99, 235, 0.08); }
+    html:not(.dark) .border-blue-500\/30 { border-color: rgba(37, 99, 235, 0.25); }
+    html:not(.dark) .text-red-400 { color: #dc2626; }
+    html:not(.dark) .bg-red-900\/20 { background-color: rgba(220, 38, 38, 0.08); }
+    html:not(.dark) .border-red-500\/30 { border-color: rgba(220, 38, 38, 0.25); }
+    html:not(.dark) .text-emerald-400 { color: #059669; }
+    html:not(.dark) .bg-emerald-900\/20 { background-color: rgba(5, 150, 105, 0.08); }
+    html:not(.dark) .border-emerald-500\/30 { border-color: rgba(5, 150, 105, 0.25); }
+
+    /* Light mode - remove gradientes */
+    html:not(.dark) [class*="bg-gradient-to"] { background-image: none !important; }
+
+    /* Light mode - cores especiais */
+    html:not(.dark) .text-primary { color: #a16207; }
+    html:not(.dark) .bg-primary\/10 { background-color: rgba(161, 98, 7, 0.08); }
+    html:not(.dark) .border-primary\/30 { border-color: rgba(161, 98, 7, 0.25); }
+    html:not(.dark) .text-yellow-400 { color: #a16207; }
+    html:not(.dark) .hover\:text-yellow-300:hover { color: #854d0e; }
+
+    /* Light mode - nav */
+    html:not(.dark) .bg-dark-900\/95 { background-color: rgba(255, 255, 255, 0.95); }
+
+    /* Light mode - SVGs */
+    html:not(.dark) svg[role="img"] { filter: saturate(.82) brightness(.96); }
+
+    /* Animações diagramas */
+    @keyframes wf-pulse { 0%,100% { opacity:.55 } 50% { opacity:1 } }
+    @keyframes wf-bar { from { transform: translateX(-6%); } to { transform: translateX(0); } }
+    @media (prefers-reduced-motion: no-preference) {
+      .wf-a { animation: wf-pulse 2.6s ease-in-out infinite; }
+      .wf-a:nth-child(2){animation-delay:.3s}
+      .wf-a:nth-child(3){animation-delay:.6s}
+      .wf-a:nth-child(4){animation-delay:.9s}
+      .wf-a:nth-child(5){animation-delay:1.2s}
+      .wf-a:nth-child(6){animation-delay:1.5s}
+      .barfill { animation: wf-bar 3s ease-in-out infinite alternate; }
+      .barfill.b2{animation-delay:.5s}
+      .barfill.b3{animation-delay:1s}
+      .barfill.b4{animation-delay:1.4s}
+      .barfill.b5{animation-delay:1.8s}
+      .barfill.b6{animation-delay:2.2s}
+    }
+  </style>
+</head>
+<body class="bg-dark-900 text-neutral-100 min-h-screen">
+
+  <!-- NAVIGATION -->
+  <nav class="sticky top-0 z-50 bg-dark-900/95 backdrop-blur-sm border-b border-dark-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-14">
+        <!-- Logo + INEMA.CLUB -->
+        <div class="flex items-center space-x-4">
+          <a href="../../index.html" class="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300">
+            <span class="text-2xl">🤖</span>
+            <span class="font-bold text-lg hidden sm:inline">Subagentes</span>
+          </a>
+          <span class="text-neutral-600">|</span>
+          <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 text-sm font-medium">INEMA.CLUB</a>
+        </div>
+
+        <!-- Trilhas + Theme Toggle -->
+        <div class="flex items-center space-x-1 sm:space-x-2">
+          <!-- Trilha 1 -->
+          <a href="../trilha1/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
+            <span class="sm:hidden">T1</span>
+            <span class="hidden sm:inline">Fundamentos</span>
+          </a>
+          <!-- Trilha 2 -->
+          <a href="../trilha2/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
+            <span class="sm:hidden">T2</span>
+            <span class="hidden sm:inline">Na prática</span>
+          </a>
+          <!-- Trilha 3 (ativa) -->
+          <a href="index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-amber-400 bg-amber-500/10">
+            <span class="sm:hidden">T3</span>
+            <span class="hidden sm:inline">Orquestração</span>
+          </a>
+          <!-- Trilha 4 -->
+          <a href="../trilha4/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-purple-400 hover:bg-purple-500/10 transition-colors">
+            <span class="sm:hidden">T4</span>
+            <span class="hidden sm:inline">Avançado</span>
+          </a>
+          <!-- Theme Toggle -->
+          <button id="theme-toggle" class="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 transition-colors ml-2">
+            <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+            </svg>
+            <svg id="theme-toggle-light-icon" class="hidden w-5 h-5 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- BREADCRUMB -->
+  <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div class="flex items-center space-x-2 text-sm text-neutral-400">
+      <a href="../../index.html" class="hover:text-amber-400">Início</a>
+      <span>/</span>
+      <a href="index.html" class="hover:text-amber-400">Trilha 3</a>
+      <span>/</span>
+      <span class="text-amber-400">Módulo 3.5</span>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <header class="bg-gradient-to-br from-amber-900/30 via-dark-800 to-dark-800 py-12 border-b border-dark-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <span class="inline-block px-3 py-1 bg-amber-500/20 text-amber-400 text-xs font-semibold rounded-full mb-4">
+        MÓDULO 3.5 · Trilha 3 · Modelo, custo e orquestração
+      </span>
+      <h1 class="text-2xl sm:text-3xl font-bold mb-4">⚙️ Workflows dinâmicos</h1>
+      <p class="text-lg text-neutral-400 max-w-3xl">
+        Um workflow dispara <strong class="text-amber-400">dezenas ou centenas de subagentes</strong> em paralelo —
+        cada um com sua própria sessão, seu próprio contexto, seu próprio custo. Aprender quando
+        essa potência se justifica (e quando destrói o orçamento) é o que separa quem
+        <strong class="text-amber-400">orquestra com precisão</strong> de quem apenas chama agentes aleatoriamente.
+      </p>
+
+      <!-- Stats Banner -->
+      <div class="grid grid-cols-4 gap-4 mt-8 max-w-2xl">
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-amber-400">7</div>
+          <div class="text-xs text-neutral-400">Tópicos</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-amber-400">~30</div>
+          <div class="text-xs text-neutral-400">Minutos</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-amber-400">Avançado</div>
+          <div class="text-xs text-neutral-400">Nível</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-amber-400">Custo</div>
+          <div class="text-xs text-neutral-400">Foco</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <!-- ABERTURA + SVG FAN-OUT GRANDE -->
+    <section class="mb-12">
+      <p class="text-neutral-300 mb-8 leading-relaxed max-w-3xl">
+        Imagine que você precisa processar <strong class="text-amber-400">210 arquivos</strong> de uma só vez: revisar
+        código, extrair metadados, gerar relatórios. Fazer isso em sequência levaria horas. Com um
+        <strong class="text-amber-400">workflow dinâmico</strong>, o orquestrador dispara um subagente por arquivo — todos ao mesmo
+        tempo, cada um na sua janela — e você recebe o consolidado em minutos. O desenho abaixo é o que acontece por baixo.
+      </p>
+
+      <!-- SVG FAN-OUT GRANDE — diagrama futurista amber + ciano -->
+      <div class="rounded-2xl border border-amber-500/30 bg-dark-900/40 p-4 mb-8">
+        <svg viewBox="0 0 1000 280" class="w-full h-auto" role="img" aria-label="Orquestrador dispara N subagentes em paralelo (fan-out grande) que convergem num resultado consolidado">
+          <defs>
+            <!-- gradiente amber→ciano -->
+            <linearGradient id="m35-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#f59e0b"/>
+              <stop offset="100%" stop-color="#38bdf8"/>
+            </linearGradient>
+            <!-- glow amber -->
+            <filter id="m35-glow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="1.8" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <!-- grid de fundo -->
+            <pattern id="m35-grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#374151" stroke-width="0.5"/>
+            </pattern>
+            <!-- seta amber -->
+            <marker id="m35-ah" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#f59e0b"/>
+            </marker>
+            <!-- seta ciano -->
+            <marker id="m35-ahc" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#38bdf8"/>
+            </marker>
+          </defs>
+
+          <!-- fundo grid -->
+          <rect x="0" y="0" width="1000" height="280" fill="url(#m35-grid)"/>
+
+          <!-- ORQUESTRADOR -->
+          <g filter="url(#m35-glow)">
+            <rect x="30" y="100" width="160" height="80" rx="14" fill="#1c1008" stroke="#f59e0b" stroke-width="2.5"/>
+          </g>
+          <text x="110" y="132" text-anchor="middle" fill="#fbbf24" font-family="Inter,sans-serif" font-weight="700" font-size="14">Orquestrador</text>
+          <text x="110" y="153" text-anchor="middle" fill="#d97706" font-family="Inter,sans-serif" font-size="11">Task tool</text>
+          <text x="110" y="169" text-anchor="middle" fill="#6b7280" font-family="Inter,sans-serif" font-size="10">1 sessão</text>
+
+          <!-- linhas fan-out amber -->
+          <line x1="190" y1="116" x2="370" y2="44"  stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#m35-ah)"/>
+          <line x1="190" y1="130" x2="370" y2="94"  stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#m35-ah)"/>
+          <line x1="190" y1="140" x2="370" y2="140" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#m35-ah)"/>
+          <line x1="190" y1="150" x2="370" y2="188" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#m35-ah)"/>
+          <line x1="190" y1="162" x2="370" y2="236" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#m35-ah)"/>
+
+          <!-- N subagentes (nós ciano — classe wf-a para animação pulse) -->
+          <g class="wf-a">
+            <rect x="370" y="20" width="148" height="48" rx="10" fill="#071826" stroke="#38bdf8" stroke-width="2"/>
+            <text x="444" y="42" text-anchor="middle" fill="#38bdf8" font-family="Inter,sans-serif" font-weight="600" font-size="12">Subagente 1</text>
+            <text x="444" y="57" text-anchor="middle" fill="#0ea5e9" font-family="Inter,sans-serif" font-size="10">arquivo_001.py</text>
+          </g>
+          <g class="wf-a">
+            <rect x="370" y="70" width="148" height="48" rx="10" fill="#071826" stroke="#38bdf8" stroke-width="2"/>
+            <text x="444" y="92" text-anchor="middle" fill="#38bdf8" font-family="Inter,sans-serif" font-weight="600" font-size="12">Subagente 2</text>
+            <text x="444" y="107" text-anchor="middle" fill="#0ea5e9" font-family="Inter,sans-serif" font-size="10">arquivo_002.py</text>
+          </g>
+          <g class="wf-a">
+            <rect x="370" y="116" width="148" height="48" rx="10" fill="#071826" stroke="#38bdf8" stroke-width="2"/>
+            <text x="444" y="138" text-anchor="middle" fill="#38bdf8" font-family="Inter,sans-serif" font-weight="600" font-size="12">Subagente N</text>
+            <text x="444" y="153" text-anchor="middle" fill="#0ea5e9" font-family="Inter,sans-serif" font-size="10">arquivo_210.py</text>
+          </g>
+
+          <!-- reticências verticais -->
+          <text x="444" y="180" text-anchor="middle" fill="#6b7280" font-family="Inter,sans-serif" font-size="20" letter-spacing="4">···</text>
+
+          <g class="wf-a">
+            <rect x="370" y="212" width="148" height="48" rx="10" fill="#071826" stroke="#38bdf8" stroke-width="2"/>
+            <text x="444" y="234" text-anchor="middle" fill="#38bdf8" font-family="Inter,sans-serif" font-weight="600" font-size="12">+ 41 extras</text>
+            <text x="444" y="249" text-anchor="middle" fill="#0ea5e9" font-family="Inter,sans-serif" font-size="10">concorrentes</text>
+          </g>
+
+          <!-- linhas convergência ciano -->
+          <line x1="518" y1="44"  x2="700" y2="128" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#m35-ahc)"/>
+          <line x1="518" y1="94"  x2="700" y2="136" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#m35-ahc)"/>
+          <line x1="518" y1="140" x2="700" y2="140" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#m35-ahc)"/>
+          <line x1="518" y1="236" x2="700" y2="152" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#m35-ahc)"/>
+
+          <!-- RESULTADO CONSOLIDADO -->
+          <g filter="url(#m35-glow)">
+            <rect x="700" y="100" width="168" height="80" rx="14" fill="#1c1008" stroke="url(#m35-grad)" stroke-width="2.5"/>
+          </g>
+          <text x="784" y="130" text-anchor="middle" fill="#fbbf24" font-family="Inter,sans-serif" font-weight="700" font-size="14">Resultado</text>
+          <text x="784" y="149" text-anchor="middle" fill="#d97706" font-family="Inter,sans-serif" font-size="11">consolidado</text>
+          <text x="784" y="167" text-anchor="middle" fill="#6b7280" font-family="Inter,sans-serif" font-size="10">N relatórios → 1</text>
+
+          <!-- rótulo N -->
+          <text x="444" y="268" text-anchor="middle" fill="#6b7280" font-family="Inter,sans-serif" font-size="11">até 210 subagentes simultâneos</text>
+        </svg>
+      </div>
+    </section>
+
+    <h2 class="text-2xl font-bold mb-6">Conteúdo detalhado</h2>
+
+    <!-- TÓPICO 1 — O que é um workflow dinâmico -->
+    <section id="topico-1" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">1</span>
+        <h2 class="text-2xl font-bold">🌐 O que é um workflow dinâmico</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        No Claude Code, um <strong class="text-amber-400">workflow dinâmico</strong> é uma orquestração onde o
+        <strong class="text-amber-400">número de subagentes não está fixo no prompt</strong> — ele é determinado em
+        tempo de execução pelo orquestrador. O maestro recebe a lista de itens, decide quantos agentes vai precisar
+        e os dispara todos via <code class="text-amber-400 bg-dark-700 px-1 rounded text-sm">Task tool</code>, um para cada item.
+      </p>
+
+      <!-- O que é / Por que / Conceitos-chave -->
+      <div class="space-y-4 mb-6">
+        <!-- O que é -->
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">O que é</h3>
+          <p class="text-neutral-300 text-sm leading-relaxed">
+            Uma estrutura de execução onde o orquestrador gera dinamicamente N tarefas paralelas com base no input —
+            seja uma lista de arquivos, uma lista de URLs, uma lista de capítulos ou qualquer coleção iterável.
+            Cada item vira um subagente independente.
+          </p>
+        </div>
+        <!-- Por que aprender -->
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">Por que aprender</h3>
+          <p class="text-neutral-300 text-sm leading-relaxed">
+            Entender workflows dinâmicos é o que permite executar jobs que seriam impossíveis em sequência dentro de
+            uma única sessão. É a diferença entre processar 5 arquivos e processar 200 — com o mesmo esforço de prompt.
+            Sem esse conhecimento, você subutiliza a ferramenta mais poderosa da plataforma.
+          </p>
+        </div>
+        <!-- Conceitos-chave -->
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">Conceitos-chave</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
+            <div class="bg-dark-700 rounded-lg p-3 text-center">
+              <div class="text-2xl mb-1">⚙️</div>
+              <div class="text-xs font-semibold text-amber-400">Task tool</div>
+              <div class="text-xs text-neutral-400">dispara agente</div>
+            </div>
+            <div class="bg-dark-700 rounded-lg p-3 text-center">
+              <div class="text-2xl mb-1">🔀</div>
+              <div class="text-xs font-semibold text-amber-400">Fan-out</div>
+              <div class="text-xs text-neutral-400">1 → N</div>
+            </div>
+            <div class="bg-dark-700 rounded-lg p-3 text-center">
+              <div class="text-2xl mb-1">🔗</div>
+              <div class="text-xs font-semibold text-amber-400">Dinâmico</div>
+              <div class="text-xs text-neutral-400">N = f(input)</div>
+            </div>
+            <div class="bg-dark-700 rounded-lg p-3 text-center">
+              <div class="text-2xl mb-1">📊</div>
+              <div class="text-xs font-semibold text-amber-400">Consolidação</div>
+              <div class="text-xs text-neutral-400">N → 1</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 2 — O gatilho: de "workflow" a ultracode -->
+    <section id="topico-2" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">2</span>
+        <h2 class="text-2xl font-bold">🚀 O gatilho: de "workflow" a <code class="text-amber-400">ultracode</code></h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        A palavra mágica mudou. Durante muito tempo, o prompt-padrão para ativar orquestração massiva era
+        <code class="bg-dark-700 px-1 rounded text-sm text-amber-400">workflow</code>. Com as versões mais recentes do
+        Claude Code, o gatilho recomendado virou <code class="bg-dark-700 px-1 rounded text-sm text-amber-400">ultracode</code>.
+        O comportamento é o mesmo — mas o token mudou. Saber isso evita frustração quando você segue tutoriais antigos.
+      </p>
+
+      <div class="space-y-4 mb-6">
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">O que é</h3>
+          <p class="text-neutral-300 text-sm leading-relaxed">
+            <code class="text-amber-400 bg-dark-700 px-1 rounded">ultracode</code> é uma instrução ao orquestrador
+            para usar a máxima capacidade paralela disponível. Quando você inclui esse token no prompt, o maestro sabe que
+            pode (e deve) disparar o maior número de subagentes necessário, sem contenção artificial.
+          </p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">Por que aprender</h3>
+          <p class="text-neutral-300 text-sm leading-relaxed">
+            O token certo muda a estratégia de execução do modelo. Sem ele, o Claude pode optar por processar em
+            sequência ou com menos agentes. Com ele, você declara explicitamente: "use orquestração massiva aqui".
+            É o interruptor entre modo normal e modo de escala total.
+          </p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">Conceitos-chave</h3>
+          <div class="grid grid-cols-2 gap-3 mt-2">
+            <div class="rounded-lg border border-emerald-500/30 bg-emerald-900/20 p-3">
+              <div class="text-xs font-semibold text-emerald-400 mb-1">✅ Novo token</div>
+              <code class="text-sm text-neutral-300">ultracode</code>
+              <div class="text-xs text-neutral-400 mt-1">ativa orquestração máxima</div>
+            </div>
+            <div class="rounded-lg border border-red-500/30 bg-red-900/20 p-3">
+              <div class="text-xs font-semibold text-red-400 mb-1">⚠️ Token antigo</div>
+              <code class="text-sm text-neutral-300">workflow</code>
+              <div class="text-xs text-neutral-400 mt-1">ainda funciona em versões antigas</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 3 — Escala: dezenas e centenas de agentes -->
+    <section id="topico-3" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">3</span>
+        <h2 class="text-2xl font-bold">📈 Escala: dezenas e centenas de agentes</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        O Claude Code foi projetado para suportar orquestração em <strong class="text-amber-400">escala real</strong>.
+        Não estamos falando de 3 a 5 subagentes — estamos falando de
+        <strong class="text-amber-400">dezenas a centenas rodando em paralelo</strong>. Cada subagente tem sua própria sessão,
+        usa tokens independentes, e pode ser um modelo diferente do orquestrador.
+      </p>
+
+      <div class="space-y-4 mb-6">
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">O que é</h3>
+          <p class="text-neutral-300 text-sm leading-relaxed">
+            A plataforma não impõe limite rígido de subagentes por workflow. O limite prático é a sua conta de API
+            (rate limits), o orçamento disponível e a capacidade de consolidar os resultados sem explodir o contexto do orquestrador.
+            Jobs com 40+ agentes simultâneos são comuns em cenários de auditoria massiva.
+          </p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">Por que aprender</h3>
+          <p class="text-neutral-300 text-sm leading-relaxed">
+            Saber a escala possível muda sua arquitetura de prompt. Se você não sabe que pode disparar 100 agentes,
+            vai continuar projetando soluções sequenciais para problemas paralelizáveis. Conhecer o teto real
+            permite projetar workflows corretos desde o início.
+          </p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">Conceitos-chave</h3>
+          <!-- timeline de escala -->
+          <div class="relative pl-6 space-y-4 mt-2">
+            <div class="absolute left-2 top-1 bottom-1 w-0.5 bg-amber-500/30"></div>
+            <div class="relative flex gap-3">
+              <div class="w-3 h-3 rounded-full bg-amber-400 mt-1 shrink-0 -ml-1.5"></div>
+              <div><span class="text-sm font-semibold text-neutral-100">2–5 agentes</span><span class="text-xs text-neutral-400 ml-2">uso comum, baixo custo</span></div>
+            </div>
+            <div class="relative flex gap-3">
+              <div class="w-3 h-3 rounded-full bg-amber-400 mt-1 shrink-0 -ml-1.5"></div>
+              <div><span class="text-sm font-semibold text-neutral-100">10–40 agentes</span><span class="text-xs text-neutral-400 ml-2">auditoria de codebase médio</span></div>
+            </div>
+            <div class="relative flex gap-3">
+              <div class="w-3 h-3 rounded-full bg-amber-400 mt-1 shrink-0 -ml-1.5"></div>
+              <div><span class="text-sm font-semibold text-neutral-100">41–100 agentes</span><span class="text-xs text-neutral-400 ml-2">workflows pesados, custo elevado</span></div>
+            </div>
+            <div class="relative flex gap-3">
+              <div class="w-3 h-3 rounded-full bg-amber-300 mt-1 shrink-0 -ml-1.5"></div>
+              <div><span class="text-sm font-semibold text-amber-300">100–210+ agentes</span><span class="text-xs text-neutral-400 ml-2">casos extremos, planejar orçamento</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 4 — Custo e limite de sessão -->
+    <section id="topico-4" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">4</span>
+        <h2 class="text-2xl font-bold">💸 Custo e limite de sessão</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Workflows dinâmicos são <strong class="text-red-400">caros por design</strong>. Cada subagente consome tokens
+        independentemente — e o custo de um workflow com 200 agentes é aproximadamente
+        <strong class="text-amber-400">200× o custo de um único agente</strong> rodando a mesma tarefa. Além do custo
+        financeiro, há o <strong class="text-amber-400">limite de sessão</strong>: o orquestrador ainda precisa de contexto
+        suficiente para ler todos os relatórios de volta.
+      </p>
+
+      <div class="space-y-4 mb-6">
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">O que é</h3>
+          <p class="text-neutral-300 text-sm leading-relaxed">
+            O custo de um workflow é a soma dos tokens de cada subagente mais os tokens do orquestrador ao consolidar.
+            O orquestrador precisa de contexto para receber os relatórios — se cada agente devolver 500 tokens e você
+            tiver 200 agentes, isso são 100 000 tokens apenas nos relatórios, antes de qualquer análise.
+          </p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">Por que aprender</h3>
+          <p class="text-neutral-300 text-sm leading-relaxed">
+            Planejar o custo antes de executar evita surpresas. Um workflow mal dimensionado pode consumir o orçamento
+            mensal inteiro em minutos. Entender a estrutura de custo permite decidir: vale usar Haiku nos subagentes?
+            Vale pedir resumos ultra-curtos? Vale subdividir em lotes menores?
+          </p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">Conceitos-chave</h3>
+          <!-- grid check/X -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+            <div class="rounded-lg border border-emerald-500/30 bg-emerald-900/20 p-3">
+              <div class="text-xs font-semibold text-emerald-400 mb-2">✅ Boas práticas de custo</div>
+              <ul class="text-xs text-neutral-300 space-y-1">
+                <li>• Usar Haiku nos subagentes quando possível</li>
+                <li>• Pedir resumo curto (não dump bruto)</li>
+                <li>• Processar em lotes de 20–40 por vez</li>
+                <li>• Testar com 5 itens antes de escalar</li>
+              </ul>
+            </div>
+            <div class="rounded-lg border border-red-500/30 bg-red-900/20 p-3">
+              <div class="text-xs font-semibold text-red-400 mb-2">❌ Armadilhas de custo</div>
+              <ul class="text-xs text-neutral-300 space-y-1">
+                <li>• Pedir output longo de cada agente</li>
+                <li>• Usar Opus em todos os subagentes</li>
+                <li>• Disparar 200 agentes sem testar antes</li>
+                <li>• Ignorar o custo de consolidação</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 5 — O caso 41/210 subagentes -->
+    <section id="topico-5" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">5</span>
+        <h2 class="text-2xl font-bold">🔬 O caso real: 41 e 210 subagentes</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Dois números viraram referência na comunidade Claude Code para workflows em escala real:
+        <strong class="text-amber-400">41 subagentes</strong> (caso de auditoria de codebase) e
+        <strong class="text-amber-400">210 subagentes</strong> (processamento de documento massivo).
+        Esses não são limites da ferramenta — são <strong class="text-amber-400">casos documentados</strong>
+        que provam que a arquitetura suporta escala sem falhas estruturais.
+      </p>
+
+      <div class="space-y-4 mb-6">
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">O que é</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+            <div class="border border-amber-500/30 rounded-xl p-4 bg-amber-900/10">
+              <div class="text-3xl font-bold text-amber-400 mb-1">41</div>
+              <div class="text-sm font-semibold text-neutral-100 mb-1">Auditoria de codebase</div>
+              <p class="text-xs text-neutral-400">Cada subagente analisou um módulo diferente. O orquestrador consolidou os achados em um único relatório de segurança.</p>
+            </div>
+            <div class="border border-sky-500/30 rounded-xl p-4 bg-sky-900/10">
+              <div class="text-3xl font-bold text-sky-400 mb-1">210</div>
+              <div class="text-sm font-semibold text-neutral-100 mb-1">Processamento de documento</div>
+              <p class="text-xs text-neutral-400">Cada subagente processou uma seção de um documento grande. Fan-out completo em uma única chamada ao orquestrador.</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">Por que aprender</h3>
+          <p class="text-neutral-300 text-sm leading-relaxed">
+            Esses casos provam que workflows dinâmicos não são teoria — são prática. Eles também definem uma
+            régua de escala: se seu problema tem menos de 40 itens paralelos, você está bem dentro do conforto.
+            Se tem mais de 100, precisa de planejamento de custo explícito.
+          </p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">Conceitos-chave</h3>
+          <div class="grid grid-cols-3 gap-3 mt-2">
+            <div class="bg-dark-700 rounded-lg p-3 text-center">
+              <div class="text-xl font-bold text-amber-400">41</div>
+              <div class="text-xs text-neutral-400">caso de referência</div>
+            </div>
+            <div class="bg-dark-700 rounded-lg p-3 text-center">
+              <div class="text-xl font-bold text-sky-400">210</div>
+              <div class="text-xs text-neutral-400">escala máxima doc.</div>
+            </div>
+            <div class="bg-dark-700 rounded-lg p-3 text-center">
+              <div class="text-xl font-bold text-emerald-400">∞</div>
+              <div class="text-xs text-neutral-400">limite = orçamento</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 6 — Quando vale usar -->
+    <section id="topico-6" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">6</span>
+        <h2 class="text-2xl font-bold">✅ Quando vale usar workflows dinâmicos</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Não é todo job paralelo que precisa de workflow dinâmico. A regra prática:
+        <strong class="text-amber-400">se o processamento de cada item é independente</strong>,
+        <strong class="text-amber-400">a lista tem mais de 10 itens</strong> e
+        <strong class="text-amber-400">o contexto explodiria processando em sequência</strong> — aí workflows dinâmicos
+        são a escolha certa.
+      </p>
+
+      <div class="space-y-4 mb-6">
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">O que é</h3>
+          <p class="text-neutral-300 text-sm leading-relaxed">
+            O critério de decisão tem três dimensões: independência (os itens não dependem uns dos outros),
+            volume (lista longa o suficiente para justificar overhead de orquestração) e
+            risco de contexto (processar tudo no maestro explodiria a janela de contexto).
+          </p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">Por que aprender</h3>
+          <p class="text-neutral-300 text-sm leading-relaxed">
+            O erro mais comum é usar workflow para tudo — incluindo jobs pequenos onde a sequência seria mais
+            eficiente e mais barata. Aprender o critério correto evita desperdício de tokens e complexidade
+            desnecessária.
+          </p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">Conceitos-chave</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+            <div class="rounded-lg border border-emerald-500/30 bg-emerald-900/20 p-3">
+              <div class="text-xs font-semibold text-emerald-400 mb-2">✅ Use workflow dinâmico</div>
+              <ul class="text-xs text-neutral-300 space-y-1">
+                <li>• Revisar 20+ arquivos de código</li>
+                <li>• Processar seções de documento longo</li>
+                <li>• Gerar relatório para N repositórios</li>
+                <li>• Analisar N contratos em paralelo</li>
+                <li>• Traduzir N páginas simultaneamente</li>
+              </ul>
+            </div>
+            <div class="rounded-lg border border-red-500/30 bg-red-900/20 p-3">
+              <div class="text-xs font-semibold text-red-400 mb-2">❌ Não use workflow</div>
+              <ul class="text-xs text-neutral-300 space-y-1">
+                <li>• Job com 2–3 itens (sequência basta)</li>
+                <li>• Itens que dependem uns dos outros</li>
+                <li>• Quando custo supera o ganho de tempo</li>
+                <li>• Tarefas criativas que precisam de coerência</li>
+                <li>• Pipeline com estado compartilhado</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 7 — Cuidados e armadilhas -->
+    <section id="topico-7" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">7</span>
+        <h2 class="text-2xl font-bold">⚠️ Cuidados: o que pode dar errado</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Orquestração massiva traz riscos que não existem em jobs simples. Os três mais críticos:
+        <strong class="text-red-400">explosão de contexto no consolidador</strong>,
+        <strong class="text-red-400">custo inesperado</strong> e
+        <strong class="text-red-400">falhas silenciosas</strong> — um subagente que retorna vazio sem avisar.
+      </p>
+
+      <div class="space-y-4 mb-6">
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">O que é</h3>
+          <p class="text-neutral-300 text-sm leading-relaxed">
+            Cada risco tem uma causa específica: o orquestrador recebe relatórios grandes demais (explosão de contexto);
+            o modelo não tem visão prévia do custo total antes de executar (surpresa financeira);
+            um subagente trava ou retorna erro silencioso, contaminando o consolidado sem que o orquestrador perceba.
+          </p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">Por que aprender</h3>
+          <p class="text-neutral-300 text-sm leading-relaxed">
+            Workflows que falham silenciosamente são os mais perigosos — o orquestrador entrega um relatório incompleto
+            sem sinalizar que 3 dos 40 subagentes não retornaram nada. Saber o risco permite adicionar instruções
+            explícitas de validação no prompt do orquestrador.
+          </p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5">
+          <h3 class="font-semibold text-amber-400 mb-3">Conceitos-chave: mitigações</h3>
+          <div class="space-y-2 mt-2">
+            <div class="flex items-start gap-3 p-3 bg-dark-700 rounded-lg">
+              <span class="text-amber-400 font-bold text-sm mt-0.5">01</span>
+              <div>
+                <div class="text-sm font-semibold text-neutral-100">Instrua output curto</div>
+                <div class="text-xs text-neutral-400">Peça resumo de 3–5 bullets por subagente, não dump completo</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-3 bg-dark-700 rounded-lg">
+              <span class="text-amber-400 font-bold text-sm mt-0.5">02</span>
+              <div>
+                <div class="text-sm font-semibold text-neutral-100">Teste com lote pequeno</div>
+                <div class="text-xs text-neutral-400">Rode com 5 itens primeiro, valide saída, depois escale</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-3 bg-dark-700 rounded-lg">
+              <span class="text-amber-400 font-bold text-sm mt-0.5">03</span>
+              <div>
+                <div class="text-sm font-semibold text-neutral-100">Valide no consolidador</div>
+                <div class="text-xs text-neutral-400">Instrua o orquestrador a reportar quantos agentes retornaram vazio</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-3 bg-dark-700 rounded-lg">
+              <span class="text-amber-400 font-bold text-sm mt-0.5">04</span>
+              <div>
+                <div class="text-sm font-semibold text-neutral-100">Calcule antes de executar</div>
+                <div class="text-xs text-neutral-400">Estime: N × custo-médio-por-agente × tokens-de-consolidação</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOCO: EXEMPLO CONCEITUAL -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">📄</span>
+        <h2 class="text-2xl font-bold">Exemplo conceitual</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Abaixo, o padrão mental de um workflow para processar 15 capítulos de um livro técnico em paralelo.
+        Note como o orquestrador não precisa ler os 15 capítulos — cada agente lê o seu, e devolve apenas o essencial.
+      </p>
+      <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-sm font-semibold text-amber-400">Estrutura mental do workflow (conceitual)</span>
+          <span class="text-xs text-neutral-500 bg-dark-700 px-2 py-1 rounded">não é código real</span>
+        </div>
+        <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>ORQUESTRADOR recebe: lista de 15 capítulos
+
+PARA CADA capítulo em paralelo (ultracode):
+  SUBAGENTE recebe: "Leia capitulo_X.md e me traga:
+    1. Tese central (1 frase)
+    2. Principais conceitos (3 bullets)
+    3. Pontos confusos para revisão (máx 2)
+    Resposta: máx 100 tokens."
+
+ORQUESTRADOR consolida: 15 resumos → relatório final
+  → identifica capítulos com mais pontos confusos
+  → sugere ordem de revisão prioritária</code></pre>
+        <div class="mt-3 p-3 bg-amber-900/20 border border-amber-500/30 rounded-lg">
+          <p class="text-xs text-amber-400"><strong>Chave do design:</strong> cada subagente retorna máximo 100 tokens. Com 15 agentes, o orquestrador recebe ~1 500 tokens de input — gerenciável. Sem esse limite, 15 capítulos longos poderiam devolver 50 000 tokens e explodir o contexto.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOCO: PROMPTS PRONTOS -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">⌨️</span>
+        <h2 class="text-2xl font-bold">Prompts prontos (copie e cole)</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Três prompts para ativar workflows dinâmicos com controle de custo. Em todos, repare no padrão:
+        <strong class="text-amber-400">declare o volume</strong>, <strong class="text-amber-400">limite o output de cada agente</strong>
+        e <strong class="text-amber-400">peça validação</strong> no consolidado.
+      </p>
+
+      <div class="space-y-4">
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-amber-400">Prompt 1 — workflow de auditoria de arquivos</span>
+            <span class="text-xs text-neutral-500">com controle de custo</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>Use ultracode para auditar os arquivos em src/.
+Para cada arquivo, abra um subagente com Haiku.
+Cada subagente deve retornar APENAS:
+- Arquivo: nome
+- Problemas: lista de até 3 items
+- Severidade: baixa/média/alta
+Máximo 80 tokens por resposta.
+Ao final, consolide quantos arquivos retornaram
+vazio e liste os de severidade alta primeiro.</code></pre>
+        </div>
+
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-amber-400">Prompt 2 — workflow com ressalva de custo explícita</span>
+            <span class="text-xs text-neutral-500">pede estimativa antes de executar</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>Tenho 80 contratos em /docs/contratos/.
+ANTES de rodar, estime quantos subagentes serão
+criados e o custo aproximado se cada agente usar
+~2 000 tokens.
+Se aprovado, use ultracode: abra um subagente por
+contrato, extraia só: partes, valor total, cláusula
+de rescisão. Resposta máx 60 tokens cada.
+Relatório final: tabela resumida.</code></pre>
+        </div>
+
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-amber-400">Prompt 3 — workflow em lotes (custo controlado)</span>
+            <span class="text-xs text-neutral-500">para listas muito grandes</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>Tenho 200 URLs em urls.txt. Processe em LOTES
+de 20 URLs por vez (não todas de uma vez).
+Cada lote: use ultracode, abra 20 subagentes em
+paralelo, cada um faz: título + resumo em 2 linhas.
+Após cada lote, mostre progresso (lote X/10 concluído).
+Ao final, consolide tudo em uma lista numerada.</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOCO: TELA SIMULADA -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">🖥️</span>
+        <h2 class="text-2xl font-bold">Tela simulada: workflow rodando 6 subagentes</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Assim aparece um workflow de auditoria no terminal do Claude Code: o orquestrador disparou 6 agentes
+        simultâneos, cada um em sua própria sessão. A status line do orquestrador mostra apenas
+        <strong class="text-amber-400">~8% do contexto usado</strong> — o trabalho pesado ficou nos subagentes.
+      </p>
+
+      <!-- Monitor mock -->
+      <div class="bg-dark-900 rounded-2xl border border-amber-500/30 overflow-hidden font-mono text-sm">
+        <!-- barra de título -->
+        <div class="flex items-center gap-2 px-4 py-3 border-b border-dark-700 bg-dark-800">
+          <div class="w-3 h-3 rounded-full bg-red-500"></div>
+          <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+          <div class="w-3 h-3 rounded-full bg-emerald-400"></div>
+          <span class="ml-3 text-neutral-400 text-xs">claude — ~/projetos/auditoria — ultracode workflow</span>
+          <span class="ml-auto text-xs text-amber-400 bg-amber-900/30 px-2 py-0.5 rounded">ORQUESTRADOR</span>
+        </div>
+        <!-- conteúdo terminal -->
+        <div class="p-4 space-y-2 text-xs">
+          <div class="text-neutral-500"># orquestrador iniciou workflow dinâmico</div>
+          <div><span class="text-amber-400">✦</span> <span class="text-neutral-300">Detectados <span class="text-amber-400">6 arquivos</span> em src/modules/ → disparando 6 subagentes em paralelo</span></div>
+          <div class="mt-3 text-neutral-500"># subagentes ativos</div>
+
+          <!-- barra de progresso agente 1 -->
+          <div class="flex items-center gap-3">
+            <span class="text-sky-400">⊕</span>
+            <span class="text-neutral-400 w-28">auth.py</span>
+            <div class="flex-1 h-2 bg-dark-700 rounded-full overflow-hidden">
+              <div class="h-full bg-sky-500 rounded-full barfill" style="width:92%"></div>
+            </div>
+            <span class="text-emerald-400 text-xs ml-2">92%</span>
+            <span class="text-neutral-500 text-xs w-20">Haiku · 1.8k tok</span>
+          </div>
+          <!-- barra agente 2 -->
+          <div class="flex items-center gap-3">
+            <span class="text-sky-400">⊕</span>
+            <span class="text-neutral-400 w-28">db_models.py</span>
+            <div class="flex-1 h-2 bg-dark-700 rounded-full overflow-hidden">
+              <div class="h-full bg-sky-500 rounded-full barfill b2" style="width:74%"></div>
+            </div>
+            <span class="text-yellow-400 text-xs ml-2">74%</span>
+            <span class="text-neutral-500 text-xs w-20">Haiku · 2.1k tok</span>
+          </div>
+          <!-- barra agente 3 -->
+          <div class="flex items-center gap-3">
+            <span class="text-sky-400">⊕</span>
+            <span class="text-neutral-400 w-28">api_routes.py</span>
+            <div class="flex-1 h-2 bg-dark-700 rounded-full overflow-hidden">
+              <div class="h-full bg-sky-500 rounded-full barfill b3" style="width:61%"></div>
+            </div>
+            <span class="text-yellow-400 text-xs ml-2">61%</span>
+            <span class="text-neutral-500 text-xs w-20">Haiku · 1.4k tok</span>
+          </div>
+          <!-- barra agente 4 -->
+          <div class="flex items-center gap-3">
+            <span class="text-sky-400">⊕</span>
+            <span class="text-neutral-400 w-28">utils.py</span>
+            <div class="flex-1 h-2 bg-dark-700 rounded-full overflow-hidden">
+              <div class="h-full bg-sky-500 rounded-full barfill b4" style="width:45%"></div>
+            </div>
+            <span class="text-sky-400 text-xs ml-2">45%</span>
+            <span class="text-neutral-500 text-xs w-20">Haiku · 0.9k tok</span>
+          </div>
+          <!-- barra agente 5 -->
+          <div class="flex items-center gap-3">
+            <span class="text-sky-400">⊕</span>
+            <span class="text-neutral-400 w-28">middleware.py</span>
+            <div class="flex-1 h-2 bg-dark-700 rounded-full overflow-hidden">
+              <div class="h-full bg-sky-500 rounded-full barfill b5" style="width:33%"></div>
+            </div>
+            <span class="text-sky-400 text-xs ml-2">33%</span>
+            <span class="text-neutral-500 text-xs w-20">Haiku · 0.7k tok</span>
+          </div>
+          <!-- barra agente 6 -->
+          <div class="flex items-center gap-3">
+            <span class="text-sky-400">⊕</span>
+            <span class="text-neutral-400 w-28">tests.py</span>
+            <div class="flex-1 h-2 bg-dark-700 rounded-full overflow-hidden">
+              <div class="h-full bg-sky-500 rounded-full barfill b6" style="width:18%"></div>
+            </div>
+            <span class="text-neutral-500 text-xs ml-2">18%</span>
+            <span class="text-neutral-500 text-xs w-20">Haiku · 0.3k tok</span>
+          </div>
+
+          <!-- status line do orquestrador -->
+          <div class="mt-4 pt-3 border-t border-dark-700">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-neutral-500">Orquestrador · contexto</span>
+              <div class="flex items-center gap-2">
+                <div class="w-24 h-1.5 bg-dark-700 rounded-full overflow-hidden">
+                  <div class="h-full bg-amber-500 rounded-full" style="width:8%"></div>
+                </div>
+                <span class="text-amber-400 font-semibold">8% usado</span>
+              </div>
+            </div>
+          </div>
+          <div class="text-neutral-600 text-xs italic mt-1">recriação ilustrativa — não é screenshot real</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOCO: EXERCÍCIO -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">🏋️</span>
+        <h2 class="text-2xl font-bold">Exercício: workflow ou sequência?</h2>
+      </div>
+
+      <div class="bg-dark-800 rounded-xl border border-amber-500/30 p-6">
+        <p class="text-neutral-300 mb-6 leading-relaxed">
+          Para cada cenário abaixo, decida: <strong class="text-amber-400">workflow dinâmico</strong> ou
+          <strong class="text-sky-400">processamento sequencial</strong>? Justifique com base nos três critérios:
+          independência, volume e risco de contexto.
+        </p>
+
+        <div class="space-y-4 mb-6">
+          <div class="p-4 bg-dark-700 rounded-xl border border-dark-600">
+            <div class="flex items-start gap-3">
+              <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold flex items-center justify-center mt-0.5 shrink-0">A</span>
+              <div>
+                <p class="text-sm text-neutral-300"><strong>Revisar 3 arquivos de configuração</strong> para verificar se há variáveis de ambiente expostas.</p>
+                <p class="text-xs text-neutral-500 mt-1">Dica: pense no volume e no overhead de orquestração.</p>
+              </div>
+            </div>
+          </div>
+          <div class="p-4 bg-dark-700 rounded-xl border border-dark-600">
+            <div class="flex items-start gap-3">
+              <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold flex items-center justify-center mt-0.5 shrink-0">B</span>
+              <div>
+                <p class="text-sm text-neutral-300"><strong>Gerar um resumo de 50 artigos científicos</strong> para um survey de literatura. Cada artigo tem ~10 000 palavras.</p>
+                <p class="text-xs text-neutral-500 mt-1">Dica: o que acontece com o contexto se você processar em sequência?</p>
+              </div>
+            </div>
+          </div>
+          <div class="p-4 bg-dark-700 rounded-xl border border-dark-600">
+            <div class="flex items-start gap-3">
+              <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold flex items-center justify-center mt-0.5 shrink-0">C</span>
+              <div>
+                <p class="text-sm text-neutral-300"><strong>Refatorar um módulo grande</strong> em etapas: primeiro extrair classes, depois renomear variáveis, depois adicionar testes.</p>
+                <p class="text-xs text-neutral-500 mt-1">Dica: pense na dependência entre as etapas.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 bg-amber-900/20 border border-amber-500/30 rounded-xl">
+          <h4 class="text-sm font-semibold text-amber-400 mb-3">Critério de avaliação</h4>
+          <div class="space-y-2 text-xs text-neutral-300">
+            <p><strong class="text-neutral-100">A — Sequencial:</strong> apenas 3 arquivos, overhead de workflow não se justifica. Custo e complexidade superam o benefício de paralelismo.</p>
+            <p><strong class="text-neutral-100">B — Workflow dinâmico:</strong> 50 artigos independentes, cada um com 10k palavras. Processar em sequência explodiria o contexto. Fan-out de 50 agentes com resumo curto é a solução correta.</p>
+            <p><strong class="text-neutral-100">C — Sequencial:</strong> as etapas são dependentes (não dá para renomear antes de extrair). Paralelismo não se aplica a pipelines com dependência de estado.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESUMO / NAVEGAÇÃO -->
+    <section class="mb-12">
+      <div class="bg-gradient-to-br from-amber-900/40 via-dark-800 to-dark-800 rounded-xl border border-amber-500/30 p-8">
+        <h2 class="text-2xl font-bold mb-6 flex items-center"><span class="mr-3">✅</span> Resumo do módulo</h2>
+        <ul class="space-y-3 mb-8 text-neutral-300">
+          <li class="flex items-start gap-2"><span class="text-amber-400 mt-1">▸</span> Workflow dinâmico = orquestrador dispara N subagentes com base no input — N determinado em tempo de execução.</li>
+          <li class="flex items-start gap-2"><span class="text-amber-400 mt-1">▸</span> O token gatilho atual é <code class="text-amber-400 bg-dark-700 px-1 rounded text-sm">ultracode</code> (era "workflow" nas versões antigas).</li>
+          <li class="flex items-start gap-2"><span class="text-amber-400 mt-1">▸</span> A plataforma suporta dezenas a centenas de agentes simultâneos — o limite prático é o orçamento.</li>
+          <li class="flex items-start gap-2"><span class="text-amber-400 mt-1">▸</span> Custo = soma dos tokens de todos os subagentes + consolidação. Calcule antes de executar.</li>
+          <li class="flex items-start gap-2"><span class="text-amber-400 mt-1">▸</span> Casos de referência: 41 agentes (auditoria) e 210 agentes (processamento de documento).</li>
+          <li class="flex items-start gap-2"><span class="text-amber-400 mt-1">▸</span> Use quando: itens independentes + volume alto + risco de contexto em sequência.</li>
+          <li class="flex items-start gap-2"><span class="text-amber-400 mt-1">▸</span> Mitigações: output curto por agente, teste com lote pequeno, validação no consolidador.</li>
+        </ul>
+
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="modulo-3-4.html" class="flex-1 text-center px-6 py-3 bg-dark-700 text-neutral-300 rounded-lg font-semibold hover:bg-dark-600 transition-colors justify-start">← Módulo anterior</a>
+          <a href="modulo-3-6.html" class="flex-1 text-center px-6 py-3 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-500 transition-colors">Próximo módulo →</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-dark-600 py-8 mt-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-neutral-500 text-sm">
+      <p class="mb-2">Subagentes — 2026 · um curso no formato
+        <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 font-medium">INEMA.CLUB</a>
+      </p>
+      <p>Trilha 3 · Modelo, custo e orquestração · Módulo 3.5</p>
+    </div>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script>
+    function toggleTopic(button) {
+      const topicItem = button.closest('.topic-item');
+      if (!topicItem) return;
+      const explanation = topicItem.querySelector('.topic-explanation');
+      const moduleCard = button.closest('.bg-dark-800');
+      if (moduleCard) {
+        moduleCard.querySelectorAll('.topic-explanation.active').forEach(exp => {
+          if (exp !== explanation) exp.classList.remove('active');
+        });
+      }
+      if (explanation) explanation.classList.toggle('active');
+    }
+
+    // Theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+    const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+    const html = document.documentElement;
+
+    if (localStorage.getItem('theme') === 'light' || (!localStorage.getItem('theme') && !html.classList.contains('dark'))) {
+      themeToggleDarkIcon.classList.remove('hidden');
+      html.classList.remove('dark');
+    } else {
+      themeToggleLightIcon.classList.remove('hidden');
+    }
+
+    themeToggle.addEventListener('click', () => {
+      themeToggleDarkIcon.classList.toggle('hidden');
+      themeToggleLightIcon.classList.toggle('hidden');
+      html.classList.toggle('dark');
+      localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+    });
+  </script>
+
+</body>
+</html>

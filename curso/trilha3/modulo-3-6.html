@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Padrões de orquestração | Subagentes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#FACC15',
+            dark: { 900: '#111827', 800: '#1f2937', 700: '#374151', 600: '#4b5563' }
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .dark body { background-color: #111827; }
+    .topic-explanation { display: none; }
+    .topic-explanation.active { display: block; }
+
+    /* Light mode overrides - OBRIGATORIO (base) */
+    html:not(.dark) body { background-color: #f8fafc; }
+    html:not(.dark) .bg-dark-900 { background-color: #ffffff; }
+    html:not(.dark) .bg-dark-800 { background-color: #f9fafb; }
+    html:not(.dark) .bg-dark-700 { background-color: #f3f4f6; }
+    html:not(.dark) .bg-dark-600 { background-color: #e5e7eb; }
+    html:not(.dark) .text-neutral-100 { color: #111827; }
+    html:not(.dark) .text-neutral-300 { color: #4b5563; }
+    html:not(.dark) .text-neutral-400 { color: #6b7280; }
+    html:not(.dark) .text-neutral-500 { color: #9ca3af; }
+    html:not(.dark) .border-dark-600 { border-color: #d1d5db; }
+    html:not(.dark) .border-dark-700 { border-color: #e5e7eb; }
+
+    /* Light mode - cores de acento (trilha 3 = Amber per plano) */
+    html:not(.dark) .text-amber-400 { color: #92400e; }
+    html:not(.dark) .bg-amber-500\/20 { background-color: rgba(146, 64, 14, 0.10); }
+    html:not(.dark) .bg-amber-500\/10 { background-color: rgba(146, 64, 14, 0.07); }
+    html:not(.dark) .border-amber-500\/30 { border-color: rgba(146, 64, 14, 0.22); }
+    html:not(.dark) .hover\:bg-amber-500\/30:hover { background-color: rgba(146, 64, 14, 0.15); }
+    html:not(.dark) .hover\:text-amber-400:hover { color: #92400e; }
+    html:not(.dark) .hover\:bg-amber-500\/10:hover { background-color: rgba(146, 64, 14, 0.07); }
+    html:not(.dark) .bg-amber-900\/20 { background-color: rgba(146, 64, 14, 0.07); }
+    html:not(.dark) .bg-amber-900\/30 { background-color: rgba(146, 64, 14, 0.10); }
+
+    /* Light mode - cores de apoio */
+    html:not(.dark) .text-blue-400 { color: #2563eb; }
+    html:not(.dark) .bg-blue-900\/20 { background-color: rgba(37, 99, 235, 0.08); }
+    html:not(.dark) .border-blue-500\/30 { border-color: rgba(37, 99, 235, 0.25); }
+    html:not(.dark) .text-red-400 { color: #dc2626; }
+    html:not(.dark) .bg-red-900\/20 { background-color: rgba(220, 38, 38, 0.08); }
+    html:not(.dark) .border-red-500\/30 { border-color: rgba(220, 38, 38, 0.25); }
+    html:not(.dark) .text-sky-400 { color: #38bdf8; }
+
+    /* Light mode - remove gradientes */
+    html:not(.dark) [class*="bg-gradient-to"] { background-image: none !important; }
+
+    /* Light mode - cores especiais */
+    html:not(.dark) .text-primary { color: #a16207; }
+    html:not(.dark) .bg-primary\/10 { background-color: rgba(161, 98, 7, 0.08); }
+    html:not(.dark) .border-primary\/30 { border-color: rgba(161, 98, 7, 0.25); }
+    html:not(.dark) .border-primary\/40 { border-color: rgba(161, 98, 7, 0.25); }
+    html:not(.dark) .text-sky-400 { color: #0369a1; }
+    html:not(.dark) .text-yellow-400 { color: #a16207; }
+    html:not(.dark) .hover\:text-sky-300:hover { color: #0284c7; }
+    html:not(.dark) .hover\:text-yellow-300:hover { color: #854d0e; }
+
+    /* Light mode - nav */
+    html:not(.dark) .bg-dark-900\/95 { background-color: rgba(255, 255, 255, 0.95); }
+
+    /* Light mode - diagramas SVG menos neon */
+    html:not(.dark) svg[role="img"] { filter: saturate(0.82) brightness(0.96); }
+
+    /* Dark mode - bordas e linhas divisórias mais suaves (OBRIGATORIO - 2 regras) */
+    .dark .border-dark-600 { border-color: #374151; }
+    .dark .divide-dark-600 > :not([hidden]) ~ :not([hidden]) { border-color: #374151; }
+
+    /* Pulso dos agentes nos diagramas */
+    @keyframes wf-pulse { 0%,100% { opacity:.55 } 50% { opacity:1 } }
+    @keyframes wf-bar { from { transform: translateX(-6%); } to { transform: translateX(0); } }
+    @media (prefers-reduced-motion: no-preference) {
+      .wf-a { animation: wf-pulse 2.6s ease-in-out infinite; }
+      .wf-a:nth-child(2){animation-delay:.2s} .wf-a:nth-child(3){animation-delay:.4s}
+      .wf-a:nth-child(4){animation-delay:.6s} .wf-a:nth-child(5){animation-delay:.8s}
+      .barfill { animation: wf-bar 3s ease-in-out infinite alternate; }
+      .barfill.b2{animation-delay:.5s} .barfill.b3{animation-delay:1s}
+      .barfill.b4{animation-delay:1.4s} .barfill.b5{animation-delay:1.8s}
+    }
+  </style>
+</head>
+<body class="bg-dark-900 text-neutral-100 min-h-screen">
+
+  <!-- NAVIGATION -->
+  <nav class="sticky top-0 z-50 bg-dark-900/95 backdrop-blur-sm border-b border-dark-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-14">
+        <!-- Logo + INEMA.CLUB -->
+        <div class="flex items-center space-x-4">
+          <a href="../../index.html" class="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300">
+            <span class="text-2xl">🤖</span>
+            <span class="font-bold text-lg hidden sm:inline">Subagentes</span>
+          </a>
+          <span class="text-neutral-600">|</span>
+          <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 text-sm font-medium">INEMA.CLUB</a>
+        </div>
+
+        <!-- Trilhas + Theme Toggle -->
+        <div class="flex items-center space-x-1 sm:space-x-2">
+          <!-- Trilha 1 -->
+          <a href="../trilha1/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+            <span class="sm:hidden">T1</span>
+            <span class="hidden sm:inline">Fundamentos</span>
+          </a>
+          <!-- Trilha 2 -->
+          <a href="../trilha2/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+            <span class="sm:hidden">T2</span>
+            <span class="hidden sm:inline">Na prática</span>
+          </a>
+          <!-- Trilha 3 (ATIVA) -->
+          <a href="index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-amber-400 bg-amber-500/10">
+            <span class="sm:hidden">T3</span>
+            <span class="hidden sm:inline">Orquestração</span>
+          </a>
+          <!-- Trilha 4 -->
+          <a href="../trilha4/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+            <span class="sm:hidden">T4</span>
+            <span class="hidden sm:inline">Avançado</span>
+          </a>
+
+          <!-- Theme Toggle -->
+          <button id="theme-toggle" class="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 transition-colors ml-2">
+            <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+            </svg>
+            <svg id="theme-toggle-light-icon" class="hidden w-5 h-5 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- BREADCRUMB -->
+  <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div class="flex items-center space-x-2 text-sm text-neutral-400">
+      <a href="../../index.html" class="hover:text-amber-400">Início</a>
+      <span>/</span>
+      <a href="index.html" class="hover:text-amber-400">Trilha 3</a>
+      <span>/</span>
+      <span class="text-amber-400">Módulo 3.6</span>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <header class="bg-gradient-to-br from-amber-900/30 via-dark-800 to-dark-800 py-12 border-b border-dark-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <span class="inline-block px-3 py-1 bg-amber-500/20 text-amber-400 text-xs font-semibold rounded-full mb-4">
+        MÓDULO 3.6 · Trilha 3 · Modelo, custo e orquestração
+      </span>
+      <h1 class="text-2xl sm:text-3xl font-bold mb-4">🗺️ Padrões de orquestração</h1>
+      <p class="text-lg text-neutral-400 max-w-3xl">
+        Nem todo problema é igual. Saber escolher a <strong class="text-amber-400">topologia certa</strong> — paralelo independente,
+        pipeline ou fan-out — determina se o sistema vai ser rápido e barato ou lento e caro. Este módulo é o mapa de decisão.
+      </p>
+
+      <!-- Stats Banner -->
+      <div class="grid grid-cols-4 gap-4 mt-8 max-w-2xl">
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-amber-400">7</div>
+          <div class="text-xs text-neutral-400">Tópicos</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-amber-400">~30</div>
+          <div class="text-xs text-neutral-400">Minutos</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-amber-400">Médio</div>
+          <div class="text-xs text-neutral-400">Nível</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-amber-400">Padrões</div>
+          <div class="text-xs text-neutral-400">Tipo</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <!-- ABERTURA + SVG 3 TOPOLOGIAS -->
+    <section class="mb-12">
+      <p class="text-neutral-300 mb-8 leading-relaxed max-w-3xl">
+        Três padrões cobrem 90% dos casos reais: <strong class="text-amber-400">paralelo independente</strong> (todos ao mesmo tempo,
+        sem dependências), <strong class="text-amber-400">pipeline</strong> (A entrega para B que entrega para C) e
+        <strong class="text-amber-400">fan-out</strong> (um dispara muitos que convergem num resultado). Entender as diferenças entre
+        eles — especialmente o custo escondido do <em>agent teams</em> — é o que separa quem
+        <strong class="text-amber-400">projeta sistemas</strong> de quem apenas usa subagentes.
+      </p>
+
+      <!-- SVG: 3 topologias lado a lado -->
+      <div class="rounded-2xl border border-amber-500/30 bg-dark-900/40 p-3 sm:p-4 mb-2 overflow-hidden">
+        <svg viewBox="0 0 1020 290" class="w-full h-auto" role="img" aria-label="Três topologias de orquestração: Paralelo independente — maestro dispara N subagentes ao mesmo tempo sem dependência entre eles; Pipeline — saída de A vira entrada de B, depois C; Fan-out — maestro dispara N agentes e coleta os resultados num único ponto de convergência">
+          <defs>
+            <linearGradient id="m36-amber" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#fbbf24"/><stop offset="1" stop-color="#f59e0b"/>
+            </linearGradient>
+            <filter id="m36-glow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="2" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <pattern id="m36-grid" width="28" height="28" patternUnits="userSpaceOnUse">
+              <circle cx="1.2" cy="1.2" r="1.2" fill="#f59e0b" opacity="0.10"/>
+            </pattern>
+            <marker id="m36-ah" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto">
+              <path d="M0,0 L8,4.5 L0,9 L2.4,4.5 Z" fill="#fbbf24"/>
+            </marker>
+            <marker id="m36-ahc" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto">
+              <path d="M0,0 L8,4.5 L0,9 L2.4,4.5 Z" fill="#38bdf8"/>
+            </marker>
+          </defs>
+          <rect x="0" y="0" width="1020" height="290" fill="url(#m36-grid)"/>
+
+          <!-- Divisores verticais -->
+          <line x1="340" y1="20" x2="340" y2="270" stroke="#4b5563" stroke-width="1.2" stroke-dasharray="6 6" opacity="0.5"/>
+          <line x1="680" y1="20" x2="680" y2="270" stroke="#4b5563" stroke-width="1.2" stroke-dasharray="6 6" opacity="0.5"/>
+
+          <!-- Rótulos das colunas -->
+          <text x="170" y="34" text-anchor="middle" fill="#fbbf24" font-family="Inter,sans-serif" font-weight="700" font-size="14">Paralelo Independente</text>
+          <text x="510" y="34" text-anchor="middle" fill="#fbbf24" font-family="Inter,sans-serif" font-weight="700" font-size="14">Pipeline</text>
+          <text x="850" y="34" text-anchor="middle" fill="#fbbf24" font-family="Inter,sans-serif" font-weight="700" font-size="14">Fan-out</text>
+
+          <!-- ===== COLUNA 1: PARALELO INDEPENDENTE ===== -->
+          <!-- Maestro → 4 agentes (sem convergência) -->
+          <g fill="none" stroke="#fbbf24" stroke-width="1.8" opacity="0.55">
+            <path d="M82,145 C130,145 140,80 196,80" marker-end="url(#m36-ah)"/>
+            <path d="M82,145 C130,145 140,112 196,112" marker-end="url(#m36-ah)"/>
+            <path d="M82,145 C130,145 140,178 196,178" marker-end="url(#m36-ah)"/>
+            <path d="M82,145 C130,145 140,210 196,210" marker-end="url(#m36-ah)"/>
+          </g>
+          <!-- maestro P1 -->
+          <g filter="url(#m36-glow)">
+            <rect x="18" y="117" width="64" height="56" rx="10" fill="#1f1604" stroke="url(#m36-amber)" stroke-width="2"/>
+          </g>
+          <text x="50" y="142" text-anchor="middle" fill="#fbbf24" font-family="Inter,sans-serif" font-weight="600" font-size="12">Maestro</text>
+          <text x="50" y="158" text-anchor="middle" fill="#f5c842" font-family="Inter,sans-serif" font-size="10">dispara</text>
+          <!-- agentes P1 -->
+          <g font-family="Inter,sans-serif" font-size="11" font-weight="600">
+            <g class="wf-a"><rect x="196" y="64" width="90" height="32" rx="8" fill="#0e1b26" stroke="#38bdf8" stroke-width="1.8"/><text x="241" y="84" text-anchor="middle" fill="#bfe6ff">sub-A</text></g>
+            <g class="wf-a"><rect x="196" y="96" width="90" height="32" rx="8" fill="#0e1b26" stroke="#38bdf8" stroke-width="1.8"/><text x="241" y="116" text-anchor="middle" fill="#bfe6ff">sub-B</text></g>
+            <g class="wf-a"><rect x="196" y="162" width="90" height="32" rx="8" fill="#0e1b26" stroke="#38bdf8" stroke-width="1.8"/><text x="241" y="182" text-anchor="middle" fill="#bfe6ff">sub-C</text></g>
+            <g class="wf-a"><rect x="196" y="194" width="90" height="32" rx="8" fill="#0e1b26" stroke="#38bdf8" stroke-width="1.8"/><text x="241" y="214" text-anchor="middle" fill="#bfe6ff">sub-D</text></g>
+          </g>
+          <text x="170" y="260" text-anchor="middle" fill="#9ca3af" font-family="Inter,sans-serif" font-size="11">sem dependência entre si</text>
+
+          <!-- ===== COLUNA 2: PIPELINE ===== -->
+          <!-- A → B → C em linha -->
+          <g fill="none" stroke="#fbbf24" stroke-width="1.8" opacity="0.55">
+            <path d="M428,145 L464,145" marker-end="url(#m36-ah)"/>
+            <path d="M530,145 L566,145" marker-end="url(#m36-ah)"/>
+            <path d="M632,145 L661,145" marker-end="url(#m36-ahc)"/>
+          </g>
+          <!-- nós A, B, C -->
+          <g font-family="Inter,sans-serif" font-weight="600">
+            <rect x="358" y="117" width="70" height="56" rx="10" fill="#1f1604" stroke="url(#m36-amber)" stroke-width="2"/>
+            <text x="393" y="143" text-anchor="middle" fill="#fbbf24" font-size="12">Agente</text>
+            <text x="393" y="159" text-anchor="middle" fill="#f5c842" font-size="11">A</text>
+
+            <rect x="464" y="117" width="66" height="56" rx="10" fill="#0e1b26" stroke="#38bdf8" stroke-width="1.8"/>
+            <text x="497" y="143" text-anchor="middle" fill="#bfe6ff" font-size="12">Agente</text>
+            <text x="497" y="159" text-anchor="middle" fill="#9ad6ff" font-size="11">B</text>
+
+            <rect x="566" y="117" width="66" height="56" rx="10" fill="#0e1b26" stroke="#38bdf8" stroke-width="1.8"/>
+            <text x="599" y="143" text-anchor="middle" fill="#bfe6ff" font-size="12">Agente</text>
+            <text x="599" y="159" text-anchor="middle" fill="#9ad6ff" font-size="11">C</text>
+          </g>
+          <!-- resultado P2 -->
+          <g filter="url(#m36-glow)">
+            <rect x="661" y="117" width="64" height="56" rx="10" fill="#1f1604" stroke="url(#m36-amber)" stroke-width="2"/>
+          </g>
+          <text x="693" y="143" text-anchor="middle" fill="#fbbf24" font-family="Inter,sans-serif" font-weight="600" font-size="12">Saída</text>
+          <text x="693" y="159" text-anchor="middle" fill="#f5c842" font-family="Inter,sans-serif" font-size="10">final</text>
+          <text x="510" y="260" text-anchor="middle" fill="#9ca3af" font-family="Inter,sans-serif" font-size="11">saída de A vira entrada de B</text>
+
+          <!-- ===== COLUNA 3: FAN-OUT ===== -->
+          <!-- Maestro → N agentes → síntese -->
+          <g fill="none" stroke="#fbbf24" stroke-width="1.8" opacity="0.55">
+            <path d="M782,145 C820,145 832,88 866,88" marker-end="url(#m36-ah)"/>
+            <path d="M782,145 C820,145 832,120 866,120" marker-end="url(#m36-ah)"/>
+            <path d="M782,145 C820,145 832,145 866,145" marker-end="url(#m36-ah)"/>
+            <path d="M782,145 C820,145 832,170 866,170" marker-end="url(#m36-ah)"/>
+            <path d="M782,145 C820,145 832,202 866,202" marker-end="url(#m36-ah)"/>
+          </g>
+          <g fill="none" stroke="#38bdf8" stroke-width="1.8" opacity="0.55">
+            <path d="M944,88  C964,88  974,145 988,145" marker-end="url(#m36-ahc)"/>
+            <path d="M944,120 C964,120 974,145 988,145" marker-end="url(#m36-ahc)"/>
+            <path d="M944,145 L988,145" marker-end="url(#m36-ahc)"/>
+            <path d="M944,170 C964,170 974,145 988,145" marker-end="url(#m36-ahc)"/>
+            <path d="M944,202 C964,202 974,145 988,145" marker-end="url(#m36-ahc)"/>
+          </g>
+          <!-- maestro P3 -->
+          <g filter="url(#m36-glow)">
+            <rect x="718" y="117" width="64" height="56" rx="10" fill="#1f1604" stroke="url(#m36-amber)" stroke-width="2"/>
+          </g>
+          <text x="750" y="142" text-anchor="middle" fill="#fbbf24" font-family="Inter,sans-serif" font-weight="600" font-size="12">Maestro</text>
+          <text x="750" y="158" text-anchor="middle" fill="#f5c842" font-family="Inter,sans-serif" font-size="10">fan-out</text>
+          <!-- agentes P3 -->
+          <g font-family="Inter,sans-serif" font-size="11" font-weight="600">
+            <g class="wf-a"><rect x="866" y="72" width="78" height="32" rx="8" fill="#0e1b26" stroke="#38bdf8" stroke-width="1.8"/><text x="905" y="92" text-anchor="middle" fill="#bfe6ff">sub-1</text></g>
+            <g class="wf-a"><rect x="866" y="104" width="78" height="32" rx="8" fill="#0e1b26" stroke="#38bdf8" stroke-width="1.8"/><text x="905" y="124" text-anchor="middle" fill="#bfe6ff">sub-2</text></g>
+            <g class="wf-a"><rect x="866" y="129" width="78" height="32" rx="8" fill="#0e1b26" stroke="#38bdf8" stroke-width="1.8"/><text x="905" y="149" text-anchor="middle" fill="#bfe6ff">sub-3</text></g>
+            <g class="wf-a"><rect x="866" y="154" width="78" height="32" rx="8" fill="#0e1b26" stroke="#38bdf8" stroke-width="1.8"/><text x="905" y="174" text-anchor="middle" fill="#bfe6ff">sub-4</text></g>
+            <g class="wf-a"><rect x="866" y="186" width="78" height="32" rx="8" fill="#0e1b26" stroke="#38bdf8" stroke-width="1.8"/><text x="905" y="206" text-anchor="middle" fill="#bfe6ff">sub-5</text></g>
+          </g>
+          <!-- síntese P3 -->
+          <g filter="url(#m36-glow)">
+            <rect x="988" y="117" width="20" height="56" rx="6" fill="#1f1604" stroke="url(#m36-amber)" stroke-width="2"/>
+          </g>
+          <text x="998" y="148" text-anchor="middle" fill="#fbbf24" font-family="Inter,sans-serif" font-weight="700" font-size="9" writing-mode="tb">∑</text>
+          <text x="850" y="260" text-anchor="middle" fill="#9ca3af" font-family="Inter,sans-serif" font-size="11">todos convergem num resumo</text>
+        </svg>
+      </div>
+      <p class="text-xs text-neutral-500 mb-0">↑ Três topologias: cada uma tem casos de uso, custo e latência diferentes.</p>
+    </section>
+
+    <!-- DIVISOR -->
+    <h2 class="text-2xl font-bold mb-6">Conteúdo detalhado</h2>
+
+    <!-- TÓPICO 1 — Paralelo independente -->
+    <section id="topico-1" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">1</span>
+        <h2 class="text-2xl font-bold">⚡ Paralelo independente</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        O padrão mais simples e o mais poderoso quando os jobs <strong class="text-amber-400">não dependem um do outro</strong>.
+        Você tem N tarefas que podem rodar ao mesmo tempo, cada uma em seu próprio subagente, e o maestro coleta os resultados no final.
+        Nenhum subagente precisa esperar o outro — o tempo total é o do <strong class="text-amber-400">mais lento, não a soma de todos</strong>.
+      </p>
+
+      <div class="bg-gradient-to-br from-amber-900/30 to-dark-800 rounded-xl border border-amber-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-amber-400 mb-4 flex items-center">
+          <span class="mr-2">📐</span> A regra dos 10+ arquivos
+        </h3>
+        <p class="text-neutral-300 mb-4">
+          Heurística prática: se o job exige ler <strong>10 ou mais arquivos</strong> — ou revisar 10 ou mais capítulos, PDFs,
+          ou qualquer unidade de trabalho — você provavelmente está olhando para um candidato a paralelo. Acima desse volume,
+          o custo de sequenciar supera o overhead de orquestrar.
+        </p>
+        <div class="bg-dark-900/40 rounded-lg p-4 font-mono text-sm text-amber-400">
+          10 arquivos sequencial: ~40 min<br/>
+          <span class="text-neutral-500"># vs</span><br/>
+          10 arquivos paralelo (sub por arquivo): ~4 min
+        </div>
+      </div>
+
+      <!-- Timeline: como o paralelo funciona -->
+      <div class="space-y-4 mb-6">
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center"><span class="text-amber-400 font-bold">1</span></div>
+          <div class="flex-1 bg-dark-800 rounded-xl p-5 border border-dark-600">
+            <h4 class="font-semibold text-white mb-1">Maestro identifica N jobs independentes</h4>
+            <p class="text-sm text-neutral-400">Ele verifica: "cada job pode rodar sem saber o resultado dos outros?" Se sim, é candidato.</p>
+          </div>
+        </div>
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center"><span class="text-amber-400 font-bold">2</span></div>
+          <div class="flex-1 bg-dark-800 rounded-xl p-5 border border-dark-600">
+            <h4 class="font-semibold text-white mb-1">Dispara todos de uma vez</h4>
+            <p class="text-sm text-neutral-400">Cada subagente abre sua própria janela. Todos rodam em simultâneo, sem fila.</p>
+          </div>
+        </div>
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center"><span class="text-amber-400 font-bold">3</span></div>
+          <div class="flex-1 bg-dark-800 rounded-xl p-5 border border-dark-600">
+            <h4 class="font-semibold text-white mb-1">Coleta os relatórios</h4>
+            <p class="text-sm text-neutral-400">O maestro espera todos terminarem e sintetiza. Você só vê o resultado final — limpo.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-amber-400 font-semibold">O que é:</span><p class="text-neutral-300 text-sm mt-1">N jobs sem dependência entre si rodando ao mesmo tempo, cada um num subagente próprio.</p></div>
+        <div><span class="text-amber-400 font-semibold">Por que aprender:</span><p class="text-neutral-300 text-sm mt-1">É o padrão que dá saltos reais de velocidade — tempo total = mais lento, não soma. Saber identificar quando aplicar é a habilidade central deste módulo.</p></div>
+        <div><span class="text-amber-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300 text-sm mt-1">independência · disparo simultâneo · tempo do mais lento · regra dos 10+ arquivos.</p></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 2 — Pipeline -->
+    <section id="topico-2" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">2</span>
+        <h2 class="text-2xl font-bold">🔗 Pipeline: A → B → C</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Quando o resultado de um agente é a <strong class="text-amber-400">entrada do próximo</strong>, você tem um pipeline.
+        Não há paralelismo aqui — o fluxo é sequencial por necessidade. O ganho não é velocidade: é
+        <strong class="text-amber-400">especialização</strong>. Cada etapa tem um agente focado só naquilo, com ferramentas
+        e instruções próprias. Pesquisar é diferente de redigir; redigir é diferente de revisar.
+      </p>
+
+      <!-- Grid ✓/✗ -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-amber-900/20 rounded-xl border border-amber-500/30 p-6">
+          <h4 class="font-bold text-amber-400 mb-4">✓ Use pipeline quando</h4>
+          <ul class="space-y-3 text-neutral-300">
+            <li class="flex items-start space-x-2"><span class="text-amber-400">✓</span><span>A saída de A é a entrada de B (dependência real)</span></li>
+            <li class="flex items-start space-x-2"><span class="text-amber-400">✓</span><span>Cada etapa precisa de ferramentas diferentes</span></li>
+            <li class="flex items-start space-x-2"><span class="text-amber-400">✓</span><span>A ordem importa (pesquisa → rascunho → revisão)</span></li>
+            <li class="flex items-start space-x-2"><span class="text-amber-400">✓</span><span>Você quer separar responsabilidades claramente</span></li>
+          </ul>
+        </div>
+        <div class="bg-red-900/20 rounded-xl border border-red-500/30 p-6">
+          <h4 class="font-bold text-red-400 mb-4">✗ Não use pipeline quando</h4>
+          <ul class="space-y-3 text-neutral-300">
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Os jobs são independentes (desperdício de latência)</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>A dependência é falsa — você só quer serializar</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>A tarefa é simples o bastante para um único agente</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-blue-900/20 rounded-xl border border-blue-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-blue-400 mb-3 flex items-center"><span class="mr-2">📊</span> Exemplo canônico: pesquisa → rascunho → revisão</h3>
+        <div class="space-y-3 font-mono text-sm text-neutral-300">
+          <div class="flex items-center gap-3">
+            <span class="text-amber-400 w-28 shrink-0">Agente A</span>
+            <span class="text-neutral-500">→</span>
+            <span>Pesquisa fontes, extrai dados brutos</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-amber-400 w-28 shrink-0">Agente B</span>
+            <span class="text-neutral-500">→</span>
+            <span>Recebe dados de A, escreve rascunho</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-amber-400 w-28 shrink-0">Agente C</span>
+            <span class="text-neutral-500">→</span>
+            <span>Recebe rascunho de B, revisa e aprova</span>
+          </div>
+        </div>
+        <p class="text-neutral-400 text-sm mt-3">Cada agente pode usar Haiku, Sonnet ou Opus dependendo da complexidade da etapa.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-amber-400 font-semibold">O que é:</span><p class="text-neutral-300 text-sm mt-1">Cadeia de agentes onde a saída de um vira entrada do próximo. Sequencial por dependência.</p></div>
+        <div><span class="text-amber-400 font-semibold">Por que aprender:</span><p class="text-neutral-300 text-sm mt-1">Especialização por etapa supera um único agente generalista. Separar responsabilidades reduz erros e facilita ajustes finos.</p></div>
+        <div><span class="text-amber-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300 text-sm mt-1">dependência real · especialização por etapa · pipeline ≠ paralelo · ordem importa.</p></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 3 — Fan-out -->
+    <section id="topico-3" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">3</span>
+        <h2 class="text-2xl font-bold">📡 Fan-out: um dispara muitos, um coleta</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Fan-out é paralelo com <strong class="text-amber-400">convergência explícita</strong>: o maestro dispara N subagentes
+        e depois sintetiza os relatórios deles num único resultado. É o padrão da "demo das 5 personas" — cada subagente usa
+        uma lente diferente, mas todos entregam ao mesmo maestro que compõe a visão final.
+      </p>
+
+      <div class="bg-gradient-to-br from-amber-900/30 to-dark-800 rounded-xl border border-amber-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-amber-400 mb-4 flex items-center">
+          <span class="mr-2">🎯</span> O que diferencia fan-out do paralelo puro
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="bg-dark-900/50 rounded-lg p-4 border border-amber-500/20">
+            <p class="text-amber-400 font-semibold text-sm mb-2">Paralelo puro</p>
+            <p class="text-neutral-300 text-sm">Jobs diferentes que não precisam ser combinados. Ex.: compilar 15 módulos.</p>
+          </div>
+          <div class="bg-dark-900/50 rounded-lg p-4 border border-amber-500/20">
+            <p class="text-amber-400 font-semibold text-sm mb-2">Fan-out</p>
+            <p class="text-neutral-300 text-sm">Múltiplas perspectivas sobre o mesmo objeto, sintetizadas num relatório. Ex.: 5 personas revisam o mesmo livro.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tip box -->
+      <div class="bg-primary/10 rounded-xl border border-primary/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-primary mb-3 flex items-center"><span class="mr-2">💡</span> Fan-out x 15 capítulos</h3>
+        <p class="text-neutral-300">Precisa revisar um livro de 15 capítulos? Fan-out: 1 subagente por capítulo, todos rodando ao mesmo tempo. O maestro coleta 15 relatórios e produz o sumário editorial. Sem fan-out, você leria 15 capítulos em série no mesmo contexto — esgotando-o antes do capítulo 10.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-amber-400 font-semibold">O que é:</span><p class="text-neutral-300 text-sm mt-1">Variante do paralelo onde o maestro explicitamente converge os resultados de N subagentes num único output.</p></div>
+        <div><span class="text-amber-400 font-semibold">Por que aprender:</span><p class="text-neutral-300 text-sm mt-1">É o padrão para diversidade de perspectivas (múltiplas lentes, revisão adversarial, cobertura completa). A síntese final é o que agrega valor.</p></div>
+        <div><span class="text-amber-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300 text-sm mt-1">convergência explícita · múltiplas perspectivas · síntese final · fan-out ≠ paralelo sem coordenação.</p></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 4 — Subagente × Agent Teams -->
+    <section id="topico-4" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">4</span>
+        <h2 class="text-2xl font-bold">💬 Subagente × Agent Teams — o custo escondido</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        <strong class="text-amber-400">Agent teams</strong> são quando múltiplos agentes conversam entre si — cada mensagem
+        de um agente para outro custa tokens. Um subagente normal não conversa: recebe um briefing, trabalha isolado e entrega
+        um relatório. Em agent teams, <strong class="text-amber-400">a conversa em si tem custo</strong> — e esse custo pode
+        superar o valor entregue se não for controlado.
+      </p>
+
+      <!-- Grid ✓/✗ custo -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-amber-900/20 rounded-xl border border-amber-500/30 p-6">
+          <h4 class="font-bold text-amber-400 mb-4">✓ Subagente (padrão)</h4>
+          <ul class="space-y-3 text-neutral-300">
+            <li class="flex items-start space-x-2"><span class="text-amber-400">✓</span><span>Recebe briefing, trabalha isolado</span></li>
+            <li class="flex items-start space-x-2"><span class="text-amber-400">✓</span><span>Custo: apenas o trabalho feito</span></li>
+            <li class="flex items-start space-x-2"><span class="text-amber-400">✓</span><span>Previsível: 1 tarefa → 1 custo</span></li>
+            <li class="flex items-start space-x-2"><span class="text-amber-400">✓</span><span>Contexto do maestro protegido</span></li>
+          </ul>
+        </div>
+        <div class="bg-red-900/20 rounded-xl border border-red-500/30 p-6">
+          <h4 class="font-bold text-red-400 mb-4">⚠️ Agent Teams — cuidado</h4>
+          <ul class="space-y-3 text-neutral-300">
+            <li class="flex items-start space-x-2"><span class="text-red-400">!</span><span>Agentes conversam entre si: cada turno = custo</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">!</span><span>Custo pode crescer geometricamente</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">!</span><span>Difícil de auditar o que foi decidido onde</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">!</span><span>Valor justifica? Meça antes de adotar</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-red-900/20 rounded-xl border border-red-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-red-400 mb-3 flex items-center"><span class="mr-2">⚠️</span> Custo ~15× — não por causa dos agentes, mas da conversa</h3>
+        <p class="text-neutral-300">Multiagente bem feito custa ~15× mais que single-agent. A maior parte desse custo não é o trabalho dos agentes — é o <strong>overhead de coordenação</strong>: prompts de briefing repetidos, contexto compartilhado, mensagens de status. Use agent teams só quando o resultado claramente justifica. Na dúvida, use subagentes normais.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-amber-400 font-semibold">O que é:</span><p class="text-neutral-300 text-sm mt-1">A distinção entre subagentes que trabalham isolados (baratos) e agent teams onde os agentes conversam entre si (custo por turno).</p></div>
+        <div><span class="text-amber-400 font-semibold">Por que aprender:</span><p class="text-neutral-300 text-sm mt-1">A diferença afeta diretamente o custo da sessão. Mal entendida, leva a sessões 10× mais caras sem resultado proporcionalmente melhor.</p></div>
+        <div><span class="text-amber-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300 text-sm mt-1">turno de conversa = custo · isolamento vs. comunicação · ~15× overhead · medir antes de adotar.</p></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 5 — Regra dos 10+ arquivos / parede -->
+    <section id="topico-5" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">5</span>
+        <h2 class="text-2xl font-bold">🧱 A regra dos 10+ arquivos e a parede de contexto</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Existe um ponto de virada onde continuar no mesmo contexto se torna contraproducente. Chamamos de
+        <strong class="text-amber-400">parede de contexto</strong>: o ponto em que o modelo começa a perder informações
+        anteriores, misturar dados de arquivos diferentes ou se confundir com referências cruzadas. A regra prática:
+        ao cruzar os <strong class="text-amber-400">10 arquivos</strong>, pense em dividir.
+      </p>
+
+      <div class="bg-gradient-to-br from-amber-900/30 to-dark-800 rounded-xl border border-amber-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-amber-400 mb-4 flex items-center">
+          <span class="mr-2">📏</span> Sinais da parede de contexto
+        </h3>
+        <ul class="space-y-3 text-neutral-300">
+          <li class="flex items-start space-x-3">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-xs font-bold">1</span>
+            <span>O modelo "esquece" um arquivo que você mencionou 5 arquivos atrás.</span>
+          </li>
+          <li class="flex items-start space-x-3">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-xs font-bold">2</span>
+            <span>A resposta mistura nomenclatura de arquivos diferentes.</span>
+          </li>
+          <li class="flex items-start space-x-3">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-xs font-bold">3</span>
+            <span>O tempo de resposta aumenta sem que o trabalho seja mais complexo.</span>
+          </li>
+          <li class="flex items-start space-x-3">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-xs font-bold">4</span>
+            <span>A barra de contexto do maestro passa de 60% — sinal de alerta.</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Tip box -->
+      <div class="bg-primary/10 rounded-xl border border-primary/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-primary mb-3 flex items-center"><span class="mr-2">💡</span> Jobs independentes por unidade de trabalho</h3>
+        <p class="text-neutral-300">Tradução prática: "15 capítulos de um livro" = 15 jobs independentes. "20 arquivos de código para auditar" = 20 jobs. "8 relatórios de vendas para analisar" = 8 jobs. Cada job vira um subagente. O maestro nunca lê os arquivos — só lê os relatórios dos subagentes.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-amber-400 font-semibold">O que é:</span><p class="text-neutral-300 text-sm mt-1">O limiar prático (10+ arquivos) onde um único contexto começa a degradar e a divisão em subagentes torna-se necessária.</p></div>
+        <div><span class="text-amber-400 font-semibold">Por que aprender:</span><p class="text-neutral-300 text-sm mt-1">Sem essa heurística, você usa subagentes tarde demais — depois que o contexto já degradou. Com ela, você decide antes do problema aparecer.</p></div>
+        <div><span class="text-amber-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300 text-sm mt-1">parede de contexto · regra dos 10+ · jobs por unidade · maestro lê relatórios, não arquivos.</p></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 6 — Jobs independentes (15 capítulos) -->
+    <section id="topico-6" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">6</span>
+        <h2 class="text-2xl font-bold">📚 Jobs independentes: o caso dos 15 capítulos</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        O exemplo dos 15 capítulos é a melhor ilustração prática do padrão. Você tem um livro com 15 capítulos e quer saber:
+        "onde está o argumento mais fraco?". Fazer isso num único contexto significa ler 15 capítulos em série — o modelo
+        começa a misturar os primeiros capítulos com os últimos. Com <strong class="text-amber-400">15 subagentes em paralelo</strong>,
+        cada um lê um capítulo e entrega um relatório de 1 página. O maestro lê 15 relatórios de 1 página e sintetiza.
+      </p>
+
+      <!-- Grid de mini cards: as 3 etapas -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-600 text-center">
+          <div class="text-3xl mb-3">📖</div>
+          <h4 class="font-semibold text-amber-400 mb-2">1 subagente / capítulo</h4>
+          <p class="text-neutral-300 text-sm">15 janelas abertas simultaneamente. Cada uma lê 1 capítulo com foco total.</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-600 text-center">
+          <div class="text-3xl mb-3">📊</div>
+          <h4 class="font-semibold text-amber-400 mb-2">15 relatórios de 1 pág.</h4>
+          <p class="text-neutral-300 text-sm">Cada subagente devolve uma avaliação concisa do seu capítulo.</p>
+        </div>
+        <div class="bg-amber-900/20 rounded-xl p-5 border border-amber-500/30 text-center">
+          <div class="text-3xl mb-3">🎯</div>
+          <h4 class="font-semibold text-amber-400 mb-2">Maestro sintetiza</h4>
+          <p class="text-neutral-300 text-sm">Lê 15 páginas (não 15 capítulos) e identifica o argumento mais fraco.</p>
+        </div>
+      </div>
+
+      <div class="bg-blue-900/20 rounded-xl border border-blue-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-blue-400 mb-3 flex items-center"><span class="mr-2">📊</span> O que muda no contexto do maestro</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-neutral-400 text-xs mb-1 uppercase tracking-wide">Sem subagentes</p>
+            <div class="space-y-1">
+              <div class="flex items-center gap-2"><div class="flex-1 h-3 rounded bg-dark-700"><div class="h-full rounded bg-red-500/60" style="width:95%"></div></div><span class="text-red-400 text-xs">95%</span></div>
+              <p class="text-neutral-500 text-xs">Contexto lotado, leitura degradada</p>
+            </div>
+          </div>
+          <div>
+            <p class="text-neutral-400 text-xs mb-1 uppercase tracking-wide">Com 15 subagentes</p>
+            <div class="space-y-1">
+              <div class="flex items-center gap-2"><div class="flex-1 h-3 rounded bg-dark-700"><div class="h-full rounded bg-amber-500/60" style="width:18%"></div></div><span class="text-amber-400 text-xs">18%</span></div>
+              <p class="text-neutral-500 text-xs">Maestro livre para raciocinar</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-amber-400 font-semibold">O que é:</span><p class="text-neutral-300 text-sm mt-1">Aplicação concreta do paralelo independente: 1 subagente por unidade de trabalho (capítulo, arquivo, relatório), todos em paralelo.</p></div>
+        <div><span class="text-amber-400 font-semibold">Por que aprender:</span><p class="text-neutral-300 text-sm mt-1">Mostra o ganho real na prática: o maestro recebe 15 resumos de 1 página em vez de processar 15 capítulos diretamente. Qualidade e velocidade maiores.</p></div>
+        <div><span class="text-amber-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300 text-sm mt-1">1 sub por unidade · relatório = resumo destilado · maestro lê pouco · contexto protegido.</p></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 7 — Escolher topologia -->
+    <section id="topico-7" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">7</span>
+        <h2 class="text-2xl font-bold">🗺️ Como escolher a topologia certa</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Há uma sequência de três perguntas para chegar à topologia certa. Responda em ordem — a primeira resposta "sim" determina o padrão.
+        Se nenhuma se aplica, um único agente é provavelmente suficiente.
+      </p>
+
+      <!-- Fluxo de decisão em cards -->
+      <div class="space-y-4 mb-6">
+        <div class="flex items-start gap-4 bg-dark-800 rounded-xl p-5 border border-amber-500/30">
+          <span class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 font-bold">?</span>
+          <div class="flex-1">
+            <p class="font-semibold text-white mb-1">Os jobs são independentes entre si?</p>
+            <p class="text-neutral-400 text-sm">Se sim → <strong class="text-amber-400">Paralelo independente</strong> (ou fan-out se precisar sintetizar).</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4 bg-dark-800 rounded-xl p-5 border border-dark-600">
+          <span class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 font-bold">?</span>
+          <div class="flex-1">
+            <p class="font-semibold text-white mb-1">A saída de um job é a entrada do próximo?</p>
+            <p class="text-neutral-400 text-sm">Se sim → <strong class="text-amber-400">Pipeline</strong> (cadeia A → B → C).</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4 bg-dark-800 rounded-xl p-5 border border-dark-600">
+          <span class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 font-bold">?</span>
+          <div class="flex-1">
+            <p class="font-semibold text-white mb-1">Os agentes precisariam conversar entre si?</p>
+            <p class="text-neutral-400 text-sm">Se sim → <strong class="text-red-400">Agent Teams (custo +)</strong>. Só se o valor justificar. Se não, rearquitetar como paralelo + síntese.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-primary/10 rounded-xl border border-primary/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-primary mb-3 flex items-center"><span class="mr-2">💡</span> A regra de ouro</h3>
+        <p class="text-neutral-300">Se você consegue dividir o problema em partes que <strong>não precisam conversar</strong>, use paralelo. Se a saída de uma parte é a entrada da próxima, use pipeline. Se as partes precisariam de um debate, pense muito bem antes de agent teams — e considere se um maestro bem instruído não resolve mais barato.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-amber-400 font-semibold">O que é:</span><p class="text-neutral-300 text-sm mt-1">O framework de 3 perguntas para escolher entre paralelo, pipeline, fan-out ou agent teams.</p></div>
+        <div><span class="text-amber-400 font-semibold">Por que aprender:</span><p class="text-neutral-300 text-sm mt-1">Saber escolher a topologia certa é a diferença entre um sistema elegante e barato e um lento e caro. É a habilidade de design central da Trilha 3.</p></div>
+        <div><span class="text-amber-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300 text-sm mt-1">independência → paralelo · dependência → pipeline · conversa → agent teams (custo +) · maestro bem instruído como alternativa.</p></div>
+      </div>
+    </section>
+
+    <!-- BLOCO: EXEMPLO REAL — tabela padrão → caso -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">📋</span>
+        <h2 class="text-2xl font-bold">Exemplo real: tabela padrão → caso de uso</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        A tabela abaixo mapeia os quatro padrões para casos concretos. Use-a como referência rápida ao projetar um sistema.
+        Para cada caso, a coluna "Por quê?" é o argumento decisivo.
+      </p>
+
+      <div class="overflow-x-auto mb-6">
+        <table class="w-full text-sm border-collapse">
+          <thead>
+            <tr class="border-b border-dark-600">
+              <th class="text-left py-3 px-4 text-amber-400 font-semibold">Padrão</th>
+              <th class="text-left py-3 px-4 text-amber-400 font-semibold">Caso de uso</th>
+              <th class="text-left py-3 px-4 text-amber-400 font-semibold">Por quê?</th>
+              <th class="text-left py-3 px-4 text-amber-400 font-semibold">Custo relativo</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-dark-600">
+            <tr class="hover:bg-dark-800/50 transition-colors">
+              <td class="py-3 px-4 text-amber-400 font-semibold">Paralelo</td>
+              <td class="py-3 px-4 text-neutral-300">Auditar 20 arquivos de código</td>
+              <td class="py-3 px-4 text-neutral-400">Arquivos independentes, sem dependência entre si</td>
+              <td class="py-3 px-4 text-emerald-400">Baixo ✓</td>
+            </tr>
+            <tr class="hover:bg-dark-800/50 transition-colors">
+              <td class="py-3 px-4 text-amber-400 font-semibold">Pipeline</td>
+              <td class="py-3 px-4 text-neutral-300">Pesquisa → rascunho → revisão de artigo</td>
+              <td class="py-3 px-4 text-neutral-400">Saída de cada etapa vira entrada da próxima</td>
+              <td class="py-3 px-4 text-blue-400">Médio</td>
+            </tr>
+            <tr class="hover:bg-dark-800/50 transition-colors">
+              <td class="py-3 px-4 text-amber-400 font-semibold">Fan-out</td>
+              <td class="py-3 px-4 text-neutral-300">5 personas revisam o mesmo livro</td>
+              <td class="py-3 px-4 text-neutral-400">Múltiplas perspectivas, convergência explícita</td>
+              <td class="py-3 px-4 text-blue-400">Médio</td>
+            </tr>
+            <tr class="hover:bg-dark-800/50 transition-colors">
+              <td class="py-3 px-4 text-amber-400 font-semibold">Fan-out</td>
+              <td class="py-3 px-4 text-neutral-300">15 capítulos analisados em paralelo</td>
+              <td class="py-3 px-4 text-neutral-400">Cada capítulo é independente, síntese no fim</td>
+              <td class="py-3 px-4 text-blue-400">Médio</td>
+            </tr>
+            <tr class="hover:bg-dark-800/50 transition-colors">
+              <td class="py-3 px-4 text-red-400 font-semibold">Agent Teams</td>
+              <td class="py-3 px-4 text-neutral-300">Negociação entre agentes especialistas</td>
+              <td class="py-3 px-4 text-neutral-400">Agentes precisam trocar informações entre si</td>
+              <td class="py-3 px-4 text-red-400">Alto ⚠️</td>
+            </tr>
+            <tr class="hover:bg-dark-800/50 transition-colors">
+              <td class="py-3 px-4 text-neutral-400 font-semibold">Único agente</td>
+              <td class="py-3 px-4 text-neutral-300">Responder 1 pergunta sobre 1 arquivo</td>
+              <td class="py-3 px-4 text-neutral-400">Overhead de orquestração não se justifica</td>
+              <td class="py-3 px-4 text-emerald-400">Mínimo ✓</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs uppercase tracking-wide text-neutral-500">agente típico de orquestração (.md)</span>
+          <span class="text-xs text-amber-400">frontmatter exemplo</span>
+        </div>
+        <pre class="font-mono text-sm text-neutral-300 overflow-x-auto leading-relaxed"><code><span class="text-neutral-500">---</span>
+<span class="text-blue-400">name</span>: chapter-auditor
+<span class="text-blue-400">description</span>: Revisa um único capítulo de texto em busca
+  de argumentos fracos, inconsistências e lacunas.
+  Use quando o maestro precisar auditar um capítulo
+  isolado (padrão fan-out de N capítulos).
+<span class="text-blue-400">tools</span>: Read                 <span class="text-neutral-500"># só lê o arquivo do capítulo</span>
+<span class="text-blue-400">model</span>: haiku               <span class="text-neutral-500"># rápido e barato por capítulo</span>
+<span class="text-neutral-500">---</span>
+
+You are a critical editor. You receive ONE chapter.
+Identify: weakest argument, factual gaps, unclear sections.
+Return a structured report: 3 bullets max. Be blunt.</code></pre>
+      </div>
+    </section>
+
+    <!-- BLOCO: PROMPTS PRONTOS -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">⌨️</span>
+        <h2 class="text-2xl font-bold">Prompts prontos (copie e cole)</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Três prompts para você identificar e usar topologias na prática. O padrão: descreva o problema, aponte a dependência (ou ausência dela) e peça a topologia certa.
+      </p>
+
+      <div class="space-y-4">
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-amber-400">Prompt 1 — qual topologia pra revisar 20 arquivos?</span>
+            <span class="text-xs text-neutral-500">diagnóstico de topologia</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>Tenho 20 arquivos de código para auditar. Cada um é
+independente dos outros. Qual topologia de subagentes
+devo usar? Justifique e mostre como estruturar o briefing
+do maestro para disparar todos em paralelo.</code></pre>
+        </div>
+
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-amber-400">Prompt 2 — fan-out de 15 capítulos com síntese</span>
+            <span class="text-xs text-neutral-500">fan-out aplicado</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>Use fan-out: dispare 1 subagente por capítulo para revisar
+os 15 capítulos em paralelo. Cada sub deve retornar um
+relatório de no máximo 3 bullets: argumento mais fraco,
+lacuna factual, seção confusa. Sintetize no final.</code></pre>
+        </div>
+
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-amber-400">Prompt 3 — pipeline pesquisa → rascunho → revisão</span>
+            <span class="text-xs text-neutral-500">pipeline sequencial</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>Monte um pipeline de 3 agentes para criar um artigo:
+Agente A: pesquisa e extrai 10 fontes sobre [tema].
+Agente B: recebe as fontes de A e escreve o rascunho.
+Agente C: recebe o rascunho de B e revisa para publicação.
+Use Haiku em A, Sonnet em B e C.</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOCO: TELA SIMULADA -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">🖥️</span>
+        <h2 class="text-2xl font-bold">Tela simulada: fan-out de 5 capítulos</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Aqui está o terminal com um fan-out de 5 capítulos em andamento. O maestro disparou 5 subagentes ao mesmo tempo;
+        cada um lê 1 capítulo com Haiku. Note: o contexto do maestro está em <strong class="text-amber-400">9%</strong> —
+        todo o trabalho pesado de leitura está nas janelas dos subagentes.
+      </p>
+
+      <div class="rounded-xl border border-dark-600 bg-dark-900 overflow-hidden mb-2">
+        <!-- Barra de título -->
+        <div class="flex items-center justify-between px-4 py-2 bg-dark-700/60 border-b border-dark-600">
+          <div class="flex items-center space-x-2">
+            <span class="w-3 h-3 rounded-full bg-red-400/70"></span>
+            <span class="w-3 h-3 rounded-full bg-amber-400/70"></span>
+            <span class="w-3 h-3 rounded-full bg-emerald-400/70"></span>
+          </div>
+          <span class="text-xs text-neutral-400 font-mono">claude code · auditar-livro · fan-out 5 capítulos</span>
+          <span class="text-xs text-amber-400 font-mono">⏱ 01:12</span>
+        </div>
+        <!-- Subagentes rodando -->
+        <div class="p-4 space-y-3 font-mono text-xs">
+          <div class="flex items-center gap-3">
+            <span class="text-amber-400 w-36 shrink-0">● cap-1 (intro)</span>
+            <span class="text-neutral-500 w-14 shrink-0">Haiku</span>
+            <div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill h-full bg-amber-500/70" style="width:88%"></div></div>
+            <span class="text-neutral-400 w-20 text-right shrink-0">42k tok</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-amber-400 w-36 shrink-0">● cap-2 (teoria)</span>
+            <span class="text-neutral-500 w-14 shrink-0">Haiku</span>
+            <div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b2 h-full bg-amber-500/70" style="width:67%"></div></div>
+            <span class="text-neutral-400 w-20 text-right shrink-0">58k tok</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-amber-400 w-36 shrink-0">● cap-3 (exemplos)</span>
+            <span class="text-neutral-500 w-14 shrink-0">Haiku</span>
+            <div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b3 h-full bg-amber-500/70" style="width:45%"></div></div>
+            <span class="text-neutral-400 w-20 text-right shrink-0">71k tok</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-amber-400 w-36 shrink-0">● cap-4 (avançado)</span>
+            <span class="text-neutral-500 w-14 shrink-0">Haiku</span>
+            <div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b4 h-full bg-amber-500/70" style="width:31%"></div></div>
+            <span class="text-neutral-400 w-20 text-right shrink-0">63k tok</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-amber-400 w-36 shrink-0">● cap-5 (conclusão)</span>
+            <span class="text-neutral-500 w-14 shrink-0">Haiku</span>
+            <div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b5 h-full bg-amber-500/70" style="width:79%"></div></div>
+            <span class="text-neutral-400 w-20 text-right shrink-0">39k tok</span>
+          </div>
+          <div class="text-neutral-500 pt-1">fan-out ativo · síntese aguardando 5 relatórios · padrão: 3 bullets/capítulo</div>
+        </div>
+        <!-- Status line -->
+        <div class="flex items-center justify-between px-4 py-2 bg-dark-800 border-t border-dark-600 font-mono text-xs">
+          <span class="text-neutral-400">maestro · Sonnet</span>
+          <div class="flex items-center gap-2">
+            <span class="text-neutral-500">seu contexto</span>
+            <div class="w-28 h-2 rounded bg-dark-700 overflow-hidden"><div class="h-full bg-amber-500/70" style="width:9%"></div></div>
+            <span class="text-amber-400">9%</span>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-neutral-500">↑ Recriação ilustrativa do terminal. 5 capítulos em paralelo com Haiku; maestro em Sonnet, contexto quase intacto.</p>
+    </section>
+
+    <!-- BLOCO: EXERCÍCIO -->
+    <section class="mb-12">
+      <div class="bg-gradient-to-br from-amber-900/30 to-dark-800 rounded-xl border border-amber-500/30 p-8">
+        <div class="flex items-center space-x-4 mb-6">
+          <span class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xl">🎯</span>
+          <h2 class="text-2xl font-bold">Exercício</h2>
+        </div>
+        <p class="text-neutral-300 mb-6 leading-relaxed">
+          Três problemas abaixo. Para cada um, escolha a topologia correta (paralelo, pipeline, fan-out ou agente único)
+          e justifique em 1 frase por que descartou as outras.
+        </p>
+
+        <div class="space-y-4 mb-6">
+          <div class="bg-dark-800/60 rounded-lg p-5">
+            <h4 class="font-semibold text-white mb-2">Problema 1</h4>
+            <p class="text-neutral-300 text-sm">Você tem 30 relatórios de vendas mensais de filiais diferentes. Quer identificar qual filial teve a maior queda de margem nos últimos 3 meses. Cada relatório é um PDF independente de ~20 páginas.</p>
+          </div>
+          <div class="bg-dark-800/60 rounded-lg p-5">
+            <h4 class="font-semibold text-white mb-2">Problema 2</h4>
+            <p class="text-neutral-300 text-sm">Você quer criar um post de blog de alta qualidade sobre um tema técnico. O fluxo natural é: primeiro pesquisar fontes confiáveis, depois escrever o rascunho com base nas fontes, depois revisar o rascunho final.</p>
+          </div>
+          <div class="bg-dark-800/60 rounded-lg p-5">
+            <h4 class="font-semibold text-white mb-2">Problema 3</h4>
+            <p class="text-neutral-300 text-sm">Você criou uma landing page e quer feedback sob 4 perspectivas diferentes: conversão (copywriter), SEO (especialista de busca), acessibilidade (auditor WCAG) e design (UX designer).</p>
+          </div>
+        </div>
+
+        <div class="bg-blue-900/20 rounded-xl border border-blue-500/30 p-6 mb-6">
+          <h4 class="font-semibold text-blue-400 mb-3">✅ Critério de verificação</h4>
+          <ul class="space-y-2 text-neutral-300 text-sm">
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">→</span><span><strong>Problema 1:</strong> Fan-out (30 PDFs independentes → 30 subagentes → síntese). Paralelo puro se não precisasse convergir.</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">→</span><span><strong>Problema 2:</strong> Pipeline (pesquisa → rascunho → revisão são dependências reais; a saída de cada etapa alimenta a próxima).</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">→</span><span><strong>Problema 3:</strong> Fan-out (4 perspectivas independentes sobre o mesmo objeto → convergência num relatório de feedback).</span></li>
+          </ul>
+          <p class="text-neutral-400 text-sm mt-3">Se você justificou por que NÃO usou agent teams em todos os três casos, você acertou em cheio.</p>
+        </div>
+
+        <div class="bg-dark-800/60 rounded-lg p-5">
+          <h4 class="font-semibold text-amber-400 mb-3">Exemplo resolvido — Problema 1</h4>
+          <p class="text-neutral-300 text-sm"><strong>Topologia:</strong> Fan-out. <strong>Por quê?</strong> 30 PDFs independentes — cada subagente lê 1 PDF e devolve "filial X, queda de Y% em mês Z". Maestro coleta 30 linhas e identifica a maior queda. <strong>Descartei pipeline</strong> porque não há dependência entre os PDFs. <strong>Descartei agent teams</strong> porque os agentes não precisam trocar informações entre si.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESUMO / NAVEGAÇÃO -->
+    <section class="mb-12">
+      <div class="bg-gradient-to-br from-amber-900/40 via-dark-800 to-dark-800 rounded-xl border border-amber-500/30 p-8">
+        <h2 class="text-2xl font-bold mb-6 flex items-center"><span class="mr-3">✅</span> Resumo do módulo</h2>
+
+        <div class="space-y-4 mb-8">
+          <div class="flex items-start space-x-3">
+            <span class="text-amber-400 mt-1">✓</span>
+            <div><strong class="text-white">Paralelo independente</strong><span class="text-neutral-400"> — N jobs sem dependência entre si; tempo total = o do mais lento. Regra: 10+ arquivos/unidades.</span></div>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-amber-400 mt-1">✓</span>
+            <div><strong class="text-white">Pipeline</strong><span class="text-neutral-400"> — A → B → C quando a saída de um é a entrada do próximo. Especialização por etapa.</span></div>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-amber-400 mt-1">✓</span>
+            <div><strong class="text-white">Fan-out</strong><span class="text-neutral-400"> — Paralelo com convergência explícita. Múltiplas perspectivas → síntese única. Ex.: 15 capítulos.</span></div>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-amber-400 mt-1">✓</span>
+            <div><strong class="text-white">Subagente × Agent Teams</strong><span class="text-neutral-400"> — Agent teams custam mais porque a conversa tem custo. Use apenas quando o valor justificar.</span></div>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-amber-400 mt-1">✓</span>
+            <div><strong class="text-white">Parede de contexto</strong><span class="text-neutral-400"> — Acima de 10+ arquivos, dividir em subagentes é necessário para manter qualidade.</span></div>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-amber-400 mt-1">✓</span>
+            <div><strong class="text-white">Escolher a topologia</strong><span class="text-neutral-400"> — 3 perguntas: são independentes? → paralelo. Há dependência? → pipeline. Precisam conversar? → agent teams (custo+).</span></div>
+          </div>
+        </div>
+
+        <div class="bg-dark-800/50 rounded-lg p-4 mb-8">
+          <h3 class="font-semibold text-amber-400 mb-2">Fim da Trilha 3 — próximo passo:</h3>
+          <p class="text-neutral-300">Trilha 4 — Avançado &amp; cross-ambiente: arquitetura multiagente em escala, comparação de modelos por papel, segurança e subagentes no Codex.</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="modulo-3-5.html" class="flex-1 text-center px-6 py-3 bg-dark-700 text-neutral-300 rounded-lg font-semibold hover:bg-dark-600 transition-colors">← Módulo anterior</a>
+          <a href="../trilha4/index.html" class="flex-1 text-center px-6 py-3 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-500 transition-colors">Trilha 4 — Avançado →</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-dark-600 py-8 mt-16">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-neutral-500 text-sm">
+      <p class="mb-2">Subagentes — 2026 · um curso no formato
+        <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 font-medium">INEMA.CLUB</a>
+      </p>
+      <p>Trilha 3 · Modelo, custo e orquestração · Módulo 3.6</p>
+    </div>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script>
+    function toggleTopic(button) {
+      const topicItem = button.closest('.topic-item');
+      if (!topicItem) return;
+      const explanation = topicItem.querySelector('.topic-explanation');
+      const moduleCard = button.closest('.bg-dark-800');
+      if (moduleCard) {
+        moduleCard.querySelectorAll('.topic-explanation.active').forEach(exp => {
+          if (exp !== explanation) exp.classList.remove('active');
+        });
+      }
+      if (explanation) explanation.classList.toggle('active');
+    }
+
+    // Theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+    const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+    const html = document.documentElement;
+
+    if (localStorage.getItem('theme') === 'light' || (!localStorage.getItem('theme') && !html.classList.contains('dark'))) {
+      themeToggleDarkIcon.classList.remove('hidden');
+      html.classList.remove('dark');
+    } else {
+      themeToggleLightIcon.classList.remove('hidden');
+    }
+
+    themeToggle.addEventListener('click', () => {
+      themeToggleDarkIcon.classList.toggle('hidden');
+      themeToggleLightIcon.classList.toggle('hidden');
+      html.classList.toggle('dark');
+      localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+    });
+  </script>
+
+</body>
+</html>
