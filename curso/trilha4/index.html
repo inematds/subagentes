@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trilha 4 · Avançado & cross-ambiente | Subagentes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#FACC15',
+            dark: { 900: '#111827', 800: '#1f2937', 700: '#374151', 600: '#4b5563', 500: '#6b7280' }
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .dark body { background-color: #111827; }
+    .topic-explanation { display: none; }
+    .topic-explanation.active { display: block; }
+
+    /* SVG futurista: pulso contido */
+    @keyframes wf-pulse { 0%,100% { opacity:.55 } 50% { opacity:1 } }
+    @media (prefers-reduced-motion: no-preference) {
+      .wf-a { animation: wf-pulse 2.6s ease-in-out infinite; }
+      .wf-a:nth-child(2){animation-delay:.25s} .wf-a:nth-child(3){animation-delay:.5s}
+      .wf-a:nth-child(4){animation-delay:.75s} .wf-a:nth-child(5){animation-delay:1s}
+    }
+
+    /* ===== Light mode overrides - OBRIGATORIO ===== */
+    /* Parte 1 - Base */
+    html:not(.dark) body { background-color: #f8fafc; }
+    html:not(.dark) .bg-dark-900 { background-color: #ffffff; }
+    html:not(.dark) .bg-dark-800 { background-color: #f9fafb; }
+    html:not(.dark) .bg-dark-700 { background-color: #f3f4f6; }
+    html:not(.dark) .bg-dark-600 { background-color: #e5e7eb; }
+    html:not(.dark) .text-neutral-100 { color: #111827; }
+    html:not(.dark) .text-neutral-300 { color: #4b5563; }
+    html:not(.dark) .text-neutral-400 { color: #6b7280; }
+    html:not(.dark) .text-neutral-500 { color: #9ca3af; }
+    html:not(.dark) .border-dark-600 { border-color: #d1d5db; }
+    html:not(.dark) .border-dark-700 { border-color: #e5e7eb; }
+
+    /* Parte 2 - Cores de acento (trilha purple) */
+    html:not(.dark) .text-purple-400 { color: #7c3aed; }
+    html:not(.dark) .bg-purple-500\/20 { background-color: rgba(124, 58, 237, 0.12); }
+    html:not(.dark) .bg-purple-500\/10 { background-color: rgba(124, 58, 237, 0.08); }
+    html:not(.dark) .border-purple-500\/30 { border-color: rgba(124, 58, 237, 0.25); }
+    html:not(.dark) .hover\:bg-purple-500\/30:hover { background-color: rgba(124, 58, 237, 0.18); }
+    html:not(.dark) .hover\:bg-purple-500\/10:hover { background-color: rgba(124, 58, 237, 0.08); }
+    html:not(.dark) .hover\:border-purple-500\/30:hover { border-color: rgba(124, 58, 237, 0.25); }
+    html:not(.dark) .hover\:text-purple-400:hover { color: #7c3aed; }
+    html:not(.dark) .group:hover .group-hover\:text-purple-400 { color: #7c3aed; }
+
+    /* Cores das outras trilhas (nav) */
+    html:not(.dark) .hover\:text-emerald-400:hover { color: #059669; }
+    html:not(.dark) .hover\:bg-emerald-500\/10:hover { background-color: rgba(5, 150, 105, 0.08); }
+    html:not(.dark) .hover\:text-blue-400:hover { color: #2563eb; }
+    html:not(.dark) .hover\:bg-blue-500\/10:hover { background-color: rgba(37, 99, 235, 0.08); }
+    html:not(.dark) .hover\:text-amber-400:hover { color: #92400e; }
+    html:not(.dark) .hover\:bg-amber-500\/10:hover { background-color: rgba(217, 119, 6, 0.08); }
+
+    /* Parte 3 - Remove gradientes e cores especiais */
+    html:not(.dark) [class*="bg-gradient-to"] { background-image: none !important; }
+    html:not(.dark) .text-primary { color: #a16207; }
+    html:not(.dark) .text-sky-400 { color: #0369a1; }
+    html:not(.dark) .text-yellow-400 { color: #a16207; }
+    html:not(.dark) .text-red-400 { color: #b91c1c; }
+    html:not(.dark) .bg-dark-900\/40 { background-color: rgba(249, 250, 251, 0.8); }
+
+    /* Parte 4 - Navbar */
+    html:not(.dark) .bg-dark-900\/95 { background-color: rgba(255, 255, 255, 0.95); }
+
+    /* Parte 5 - Bordas suavizadas no DARK mode (OBRIGATORIO) */
+    .dark .border-dark-600 { border-color: #374151; }
+    .dark .divide-dark-600 > :not([hidden]) ~ :not([hidden]) { border-color: #374151; }
+
+    /* SVG: suavizar no tema claro */
+    html:not(.dark) svg[role="img"] { filter: saturate(0.82) brightness(0.96); }
+  </style>
+</head>
+<body class="bg-dark-900 text-neutral-100 min-h-screen">
+
+  <!-- NAVIGATION -->
+  <nav class="sticky top-0 z-50 bg-dark-900/95 backdrop-blur-sm border-b border-dark-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-14">
+        <!-- Logo + INEMA.CLUB -->
+        <div class="flex items-center space-x-4">
+          <a href="../../index.html" class="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300">
+            <span class="text-2xl">🤖</span>
+            <span class="font-bold text-lg hidden sm:inline">Subagentes</span>
+          </a>
+          <span class="text-neutral-600">|</span>
+          <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 text-sm font-medium">INEMA.CLUB</a>
+        </div>
+
+        <!-- Trilhas + Theme Toggle -->
+        <div class="flex items-center space-x-1 sm:space-x-2">
+          <a href="../trilha1/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
+            <span class="sm:hidden">T1</span>
+            <span class="hidden sm:inline">Fundamentos</span>
+          </a>
+          <a href="../trilha2/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
+            <span class="sm:hidden">T2</span>
+            <span class="hidden sm:inline">Na prática</span>
+          </a>
+          <a href="../trilha3/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+            <span class="sm:hidden">T3</span>
+            <span class="hidden sm:inline">Orquestração</span>
+          </a>
+          <a href="index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-purple-400 bg-purple-500/10">
+            <span class="sm:hidden">T4</span>
+            <span class="hidden sm:inline">Avançado</span>
+          </a>
+
+          <!-- Theme Toggle -->
+          <button id="theme-toggle" class="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 transition-colors ml-2">
+            <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+            </svg>
+            <svg id="theme-toggle-light-icon" class="hidden w-5 h-5 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <header class="bg-gradient-to-br from-purple-900/30 via-dark-800 to-dark-800 py-12 border-b border-dark-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <span class="inline-block px-3 py-1 bg-purple-500/20 text-purple-400 text-xs font-semibold rounded-full mb-4">
+        TRILHA 4
+      </span>
+      <h1 class="text-3xl sm:text-4xl font-bold mb-4">🚀 Avançado & cross-ambiente</h1>
+      <p class="text-lg text-neutral-400 max-w-3xl mb-2">
+        Além do Claude Code. Arquitetura em escala, Codex e outros runtimes, segurança,
+        bibliotecas da comunidade e montagem do seu sistema de especialistas.
+      </p>
+
+      <!-- HERO SVG: frota heterogênea → múltiplos runtimes → sistema unificado (purple + ciano) -->
+      <div class="rounded-2xl border border-purple-500/30 bg-dark-900/40 p-3 sm:p-4 mt-8 mb-8 overflow-hidden">
+        <svg viewBox="0 0 1000 260" class="w-full h-auto" role="img" aria-label="Uma frota de agentes especializados opera em múltiplos runtimes paralelos e converge num único sistema de produção">
+          <defs>
+            <linearGradient id="t4h-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#c084fc"/><stop offset="1" stop-color="#a855f7"/>
+            </linearGradient>
+            <linearGradient id="t4h-grad-c" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#38bdf8"/><stop offset="1" stop-color="#0ea5e9"/>
+            </linearGradient>
+            <filter id="t4h-glow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="t4h-glow-sm" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="1.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <pattern id="t4h-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+              <circle cx="1.3" cy="1.3" r="1.3" fill="#a855f7" opacity="0.13"/>
+            </pattern>
+            <marker id="t4h-ah" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto">
+              <path d="M0,0 L8,4.5 L0,9 L2.4,4.5 Z" fill="#c084fc"/>
+            </marker>
+            <marker id="t4h-ahc" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto">
+              <path d="M0,0 L8,4.5 L0,9 L2.4,4.5 Z" fill="#38bdf8"/>
+            </marker>
+          </defs>
+
+          <!-- fundo grid -->
+          <rect x="0" y="0" width="1000" height="260" fill="url(#t4h-grid)"/>
+
+          <!-- Linha de separação central tracejada (cross-runtime) -->
+          <line x1="490" y1="20" x2="490" y2="240" stroke="#c084fc" stroke-width="1" stroke-dasharray="6 5" opacity="0.25"/>
+
+          <!-- BLOCO ESQUERDO: Frota de agentes especializados -->
+          <!-- Nó orquestrador principal -->
+          <g filter="url(#t4h-glow)">
+            <rect x="30" y="108" width="150" height="54" rx="12" fill="#1a1230" stroke="url(#t4h-grad)" stroke-width="2.5"/>
+          </g>
+          <text x="105" y="131" text-anchor="middle" fill="#c084fc" font-family="Inter,sans-serif" font-weight="700" font-size="13">Orquestrador</text>
+          <text x="105" y="150" text-anchor="middle" fill="#d8b4fe" font-family="Inter,sans-serif" font-size="11">frota de agentes</text>
+
+          <!-- 4 agentes especializados (ciano, pulsando) -->
+          <g class="wf-a" filter="url(#t4h-glow-sm)">
+            <rect x="240" y="30" width="130" height="44" rx="10" fill="#0e1b26" stroke="#38bdf8" stroke-width="1.8"/>
+          </g>
+          <text x="305" y="49" text-anchor="middle" fill="#38bdf8" font-family="Inter,sans-serif" font-weight="600" font-size="12">security-auditor</text>
+          <text x="305" y="65" text-anchor="middle" fill="#9ad6ff" font-family="Inter,sans-serif" font-size="10">read-only · isolado</text>
+
+          <g class="wf-a" filter="url(#t4h-glow-sm)">
+            <rect x="240" y="90" width="130" height="44" rx="10" fill="#0e1b26" stroke="#38bdf8" stroke-width="1.8"/>
+          </g>
+          <text x="305" y="109" text-anchor="middle" fill="#38bdf8" font-family="Inter,sans-serif" font-weight="600" font-size="12">test-runner</text>
+          <text x="305" y="125" text-anchor="middle" fill="#9ad6ff" font-family="Inter,sans-serif" font-size="10">verifica saída</text>
+
+          <g class="wf-a" filter="url(#t4h-glow-sm)">
+            <rect x="240" y="150" width="130" height="44" rx="10" fill="#0e1b26" stroke="#38bdf8" stroke-width="1.8"/>
+          </g>
+          <text x="305" y="169" text-anchor="middle" fill="#38bdf8" font-family="Inter,sans-serif" font-weight="600" font-size="12">doc-writer</text>
+          <text x="305" y="185" text-anchor="middle" fill="#9ad6ff" font-family="Inter,sans-serif" font-size="10">gera documentação</text>
+
+          <g class="wf-a" filter="url(#t4h-glow-sm)">
+            <rect x="240" y="210" width="130" height="44" rx="10" fill="#0e1b26" stroke="#38bdf8" stroke-width="1.8"/>
+          </g>
+          <text x="305" y="229" text-anchor="middle" fill="#38bdf8" font-family="Inter,sans-serif" font-weight="600" font-size="12">db-expert</text>
+          <text x="305" y="245" text-anchor="middle" fill="#9ad6ff" font-family="Inter,sans-serif" font-size="10">queries + migrações</text>
+
+          <!-- Setas orquestrador → agentes -->
+          <g fill="none" stroke="#c084fc" stroke-width="1.8" opacity="0.55">
+            <path d="M180,135 C210,135 215,52 240,52" marker-end="url(#t4h-ah)"/>
+            <path d="M180,135 C210,135 215,112 240,112" marker-end="url(#t4h-ah)"/>
+            <path d="M180,135 C210,135 215,172 240,172" marker-end="url(#t4h-ah)"/>
+            <path d="M180,135 C210,135 215,232 240,232" marker-end="url(#t4h-ah)"/>
+          </g>
+
+          <!-- BLOCO DIREITO: Múltiplos runtimes -->
+          <!-- Runtime 1: Claude Code -->
+          <g filter="url(#t4h-glow-sm)">
+            <rect x="530" y="40" width="140" height="50" rx="11" fill="#1a1230" stroke="url(#t4h-grad)" stroke-width="2"/>
+          </g>
+          <text x="600" y="61" text-anchor="middle" fill="#c084fc" font-family="Inter,sans-serif" font-weight="700" font-size="13">Claude Code</text>
+          <text x="600" y="78" text-anchor="middle" fill="#d8b4fe" font-family="Inter,sans-serif" font-size="11">runtime nativo</text>
+
+          <!-- Runtime 2: Codex CLI -->
+          <g filter="url(#t4h-glow-sm)">
+            <rect x="530" y="110" width="140" height="50" rx="11" fill="#1a1230" stroke="url(#t4h-grad)" stroke-width="2"/>
+          </g>
+          <text x="600" y="131" text-anchor="middle" fill="#c084fc" font-family="Inter,sans-serif" font-weight="700" font-size="13">Codex CLI</text>
+          <text x="600" y="148" text-anchor="middle" fill="#d8b4fe" font-family="Inter,sans-serif" font-size="11">cross-runtime</text>
+
+          <!-- Runtime 3: Custom harness -->
+          <g filter="url(#t4h-glow-sm)">
+            <rect x="530" y="180" width="140" height="50" rx="11" fill="#1a1230" stroke="url(#t4h-grad)" stroke-width="2"/>
+          </g>
+          <text x="600" y="201" text-anchor="middle" fill="#c084fc" font-family="Inter,sans-serif" font-weight="700" font-size="13">Custom harness</text>
+          <text x="600" y="218" text-anchor="middle" fill="#d8b4fe" font-family="Inter,sans-serif" font-size="11">skill portável</text>
+
+          <!-- Setas agentes → runtimes (ciano) -->
+          <g fill="none" stroke="#38bdf8" stroke-width="1.6" opacity="0.5">
+            <path d="M370,52  C450,52 460,65 530,65" marker-end="url(#t4h-ahc)"/>
+            <path d="M370,112 C450,112 460,135 530,135" marker-end="url(#t4h-ahc)"/>
+            <path d="M370,172 C450,172 460,135 530,135" marker-end="url(#t4h-ahc)"/>
+            <path d="M370,232 C450,232 460,205 530,205" marker-end="url(#t4h-ahc)"/>
+          </g>
+
+          <!-- Nó resultado final -->
+          <g filter="url(#t4h-glow)">
+            <rect x="730" y="108" width="150" height="54" rx="12" fill="#1a1230" stroke="url(#t4h-grad)" stroke-width="2.5"/>
+          </g>
+          <text x="805" y="131" text-anchor="middle" fill="#c084fc" font-family="Inter,sans-serif" font-weight="700" font-size="13">Sistema</text>
+          <text x="805" y="150" text-anchor="middle" fill="#d8b4fe" font-family="Inter,sans-serif" font-size="11">em produção</text>
+
+          <!-- Setas runtimes → resultado -->
+          <g fill="none" stroke="#c084fc" stroke-width="1.8" opacity="0.55">
+            <path d="M670,65  C700,65  705,135 730,135" marker-end="url(#t4h-ah)"/>
+            <path d="M670,135 L730,135" marker-end="url(#t4h-ah)"/>
+            <path d="M670,205 C700,205 705,135 730,135" marker-end="url(#t4h-ah)"/>
+          </g>
+
+          <!-- Label cross-runtime -->
+          <text x="490" y="14" text-anchor="middle" fill="#c084fc" font-family="Inter,sans-serif" font-size="10" opacity="0.6">cross-runtime</text>
+        </svg>
+      </div>
+
+      <div class="flex items-center space-x-6 text-sm text-neutral-500">
+        <span>6 módulos</span>
+        <span>·</span>
+        <span>~3h 20min</span>
+        <span>·</span>
+        <span class="text-purple-400 font-semibold">Nível avançado</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <!-- MAPA DA TRILHA -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-6">Mapa da trilha</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        <a href="#modulo-4-1" class="group bg-dark-800 rounded-xl border border-dark-600 hover:border-purple-500/30 p-5 transition-all">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-purple-400 font-bold text-sm">4.1</span>
+            <span class="text-xs text-neutral-500">~35 min</span>
+          </div>
+          <h3 class="font-semibold mb-1 group-hover:text-purple-400 transition-colors">🏗️ Escala sem teto</h3>
+          <p class="text-neutral-500 text-xs">Frota, loops e verificação adversarial.</p>
+        </a>
+
+        <a href="#modulo-4-2" class="group bg-dark-800 rounded-xl border border-dark-600 hover:border-purple-500/30 p-5 transition-all">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-purple-400 font-bold text-sm">4.2</span>
+            <span class="text-xs text-neutral-500">~30 min</span>
+          </div>
+          <h3 class="font-semibold mb-1 group-hover:text-purple-400 transition-colors">🌐 Além do Claude Code</h3>
+          <p class="text-neutral-500 text-xs">Codex CLI e skills portáveis.</p>
+        </a>
+
+        <a href="#modulo-4-3" class="group bg-dark-800 rounded-xl border border-dark-600 hover:border-purple-500/30 p-5 transition-all">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-purple-400 font-bold text-sm">4.3</span>
+            <span class="text-xs text-neutral-500">~35 min</span>
+          </div>
+          <h3 class="font-semibold mb-1 group-hover:text-purple-400 transition-colors">🎯 Modelo certo, papel certo</h3>
+          <p class="text-neutral-500 text-xs">Opus, Sonnet, Haiku × GPT × outros.</p>
+        </a>
+
+        <a href="#modulo-4-4" class="group bg-dark-800 rounded-xl border border-dark-600 hover:border-purple-500/30 p-5 transition-all">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-purple-400 font-bold text-sm">4.4</span>
+            <span class="text-xs text-neutral-500">~30 min</span>
+          </div>
+          <h3 class="font-semibold mb-1 group-hover:text-purple-400 transition-colors">🔒 Subagente não confia em ninguém</h3>
+          <p class="text-neutral-500 text-xs">Prompt injection, permissões e higiene.</p>
+        </a>
+
+        <a href="#modulo-4-5" class="group bg-dark-800 rounded-xl border border-dark-600 hover:border-purple-500/30 p-5 transition-all">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-purple-400 font-bold text-sm">4.5</span>
+            <span class="text-xs text-neutral-500">~25 min</span>
+          </div>
+          <h3 class="font-semibold mb-1 group-hover:text-purple-400 transition-colors">📚 Copie antes de criar</h3>
+          <p class="text-neutral-500 text-xs">Comunidade, catálogos e reuso inteligente.</p>
+        </a>
+
+        <a href="#modulo-4-6" class="group bg-dark-800 rounded-xl border border-dark-600 hover:border-purple-500/30 p-5 transition-all">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-purple-400 font-bold text-sm">4.6</span>
+            <span class="text-xs text-neutral-500">~25 min</span>
+          </div>
+          <h3 class="font-semibold mb-1 group-hover:text-purple-400 transition-colors">🏭 Sua fábrica de especialistas</h3>
+          <p class="text-neutral-500 text-xs">Biblioteca pessoal e checklist de produção.</p>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- CONTEÚDO DETALHADO -->
+    <h2 class="text-2xl font-bold mb-6">Conteúdo detalhado</h2>
+
+    <!-- ===== MÓDULO 4.1 ===== -->
+    <div id="modulo-4-1" class="bg-dark-800 rounded-xl border border-dark-600 mb-6">
+      <div class="p-6 border-b border-dark-600">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-purple-400 font-bold">4.1</span>
+          <span class="text-xs text-neutral-500">~35 min</span>
+        </div>
+        <h3 class="text-2xl font-bold mb-2">🏗️ Arquitetura multiagente em escala</h3>
+        <p class="text-neutral-400 text-sm">Frota, loop-until-dry, verificação adversarial, completeness critic — sem cap silencioso na profundidade do sistema.</p>
+      </div>
+      <div class="divide-y divide-dark-600">
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
+            <span class="font-medium">O que é uma frota de agentes</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Uma frota é um conjunto nomeado de subagentes com papéis distintos que o orquestrador pode escalar horizontalmente: um agente por tarefa, N tarefas em paralelo.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Sem o conceito de frota, você fica limitado a pipelines lineares. Com ele, o volume de trabalho cresce sem aumentar a complexidade do prompt principal.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Frota = conjunto + papel + paralelismo; orquestrador gerencia, não executa; cada membro reporta ao centro.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">2</span>
+            <span class="font-medium">Loop-until-dry: o padrão de exaustão</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">O orquestrador relança subagentes até que não haja mais itens para processar. O loop termina quando a fila está vazia, não depois de N tentativas fixas.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Tarefas de pesquisa, auditoria de código e análise de logs nunca têm tamanho previsível. O loop-until-dry garante completude sem hard-cap arbitrário.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Condição de parada = fila vazia; guarda de segurança = limite de iterações; relatório de progresso entre rodadas.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">3</span>
+            <span class="font-medium">Verificação adversarial (refutar)</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Um subagente separado recebe o resultado do agente principal e tenta refutá-lo ativamente — procura erros, lacunas, contradições — sem acesso ao raciocínio original.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">LLMs tendem a confirmar o que geraram. O verificador adversarial quebra esse viés de confirmação sem precisar de revisão humana em cada iteração.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Isolamento de contexto; papel explícito de "refutador"; saída binária: aprovado / lista de falhas.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">4</span>
+            <span class="font-medium">Completeness critic: nada fica para trás</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Um agente crítico compara o escopo inicial com a entrega final e lista o que ficou incompleto ou não foi abordado. É diferente do verificador adversarial: aqui o foco é cobertura, não correção.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Projetos grandes perdem partes inteiras de escopo silenciosamente. O completeness critic atua como checklist automatizado e fecha o ciclo.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Escopo como contrato; diferença cobertura × correção; saída: lista de gaps para relançar ou reportar.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">5</span>
+            <span class="font-medium">Pipeline find → verify → synthesize</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">O padrão de três estágios para pesquisa em escala: um finder coleta evidências, um verifier checa cada uma, um synthesizer produz o relatório final com fontes rastreadas.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Separa preocupações — busca, verificação e síntese em agentes dedicados — tornando cada etapa substituível e o resultado auditável.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Estágios desacoplados; handoff via artefato (arquivo ou JSON); rastreabilidade de fonte.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">6</span>
+            <span class="font-medium">Esqueleto de harness multiagente</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Um template mínimo de orquestrador que delega a N subagentes, coleta resultados e decide se relança ou encerra — o esqueleto que você copia e adapta.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Construir um harness do zero toda vez é trabalho repetido. O esqueleto expõe os pontos de extensão sem amarrar a lógica de domínio.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Ponto de entrada; lista de agentes; loop de coleta; condição de parada; saída estruturada.</p></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="p-6 border-t border-dark-600 flex flex-wrap gap-3 justify-start">
+        <a href="modulo-4-1.html" class="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors">Ver Completo</a>
+        <button onclick="openModal('modal-4-1')" class="px-4 py-2 text-sm bg-dark-600 hover:bg-dark-500 rounded-lg transition-colors">Ver em Modal</button>
+      </div>
+    </div>
+
+    <!-- ===== MÓDULO 4.2 ===== -->
+    <div id="modulo-4-2" class="bg-dark-800 rounded-xl border border-dark-600 mb-6">
+      <div class="p-6 border-b border-dark-600">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-purple-400 font-bold">4.2</span>
+          <span class="text-xs text-neutral-500">~30 min</span>
+        </div>
+        <h3 class="text-2xl font-bold mb-2">🌐 Subagentes no Codex e outros ambientes</h3>
+        <p class="text-neutral-400 text-sm">Como o conceito de subagente mapeia fora do Claude Code — cross-runtime com polyskill, equivalências de ferramentas, skill portável.</p>
+      </div>
+      <div class="divide-y divide-dark-600">
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
+            <span class="font-medium">Conceito de subagente é agnóstico de runtime</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Subagente é um padrão — contexto isolado, papel definido, relatório de volta — que existe em qualquer runtime que suporte chamadas de agente, não apenas no Claude Code.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Libera você de depender de um único vendor. A habilidade de desenhar sistemas multiagente vale em qualquer ferramenta que você use.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Padrão vs. implementação; portabilidade de conceito; mapeamento de primitivos entre runtimes.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">2</span>
+            <span class="font-medium">Codex CLI: o equivalente do Claude Code</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">O Codex CLI da OpenAI usa arquivos `.md` em `.codex/agents/` com a mesma filosofia: persona + ferramentas + disallowed-tools. A estrutura é análoga ao `.claude/agents/`.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Equipes usam múltiplas ferramentas. Saber mapear seu agente Claude para o Codex significa reutilizar a lógica sem reescrever do zero.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">`.codex/agents/` ↔ `.claude/agents/`; campos equivalentes; diferenças de sintaxe e limitações.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">3</span>
+            <span class="font-medium">Cross-runtime com polyskill</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Polyskill é o padrão de escrever uma única fonte de skill que se adapta ao runtime detectado — Claude Code, Codex ou outro — sem fork de arquivo.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Manter dois arquivos paralelos diverge inevitavelmente. O polyskill mantém uma verdade única e resolve a diferença na camada de adaptação.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Uma fonte, N saídas; seções condicionais; camada de adaptação vs. lógica de domínio.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">4</span>
+            <span class="font-medium">Tabela de equivalências de ferramentas</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Mapeamento lado a lado das ferramentas principais entre runtimes: Bash/Read/Write/Edit do Claude Code e seus correspondentes no Codex e outros ambientes.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Tradução explícita evita surpresas. Saber que "Bash" vira "shell" e "Edit" vira "patch" acelera a portabilidade e reduz bugs de adaptação.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Primitivos comuns (ler, escrever, executar); ferramentas sem equivalente direto; strategy para lacunas.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">5</span>
+            <span class="font-medium">Escrevendo uma skill portável</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Uma skill portável usa linguagem de domínio no corpo — nunca nomes de ferramentas específicas — e delega a resolução de "qual ferramenta usar" para a seção de adaptação.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Skills com `Bash:` hardcoded falham silenciosamente em runtimes que não têm Bash. A portabilidade começa na escolha das palavras.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Abstração de ferramenta; seção "Tool mapping"; testes de portabilidade entre runtimes.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">6</span>
+            <span class="font-medium">Mesma .md → 2 runtimes: exemplo prático</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Walkthrough de um agente `code-reviewer` que roda no Claude Code e no Codex CLI sem modificação, mostrando onde a adaptação acontece e o que é idêntico.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Ver o exemplo concreto fixa o padrão. É a diferença entre entender o conceito e saber onde mexer quando algo quebra na portabilidade.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Seções invariantes vs. seções de adaptação; diff comentado; checklist de teste cross-runtime.</p></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="p-6 border-t border-dark-600 flex flex-wrap gap-3 justify-start">
+        <a href="modulo-4-2.html" class="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors">Ver Completo</a>
+        <button onclick="openModal('modal-4-2')" class="px-4 py-2 text-sm bg-dark-600 hover:bg-dark-500 rounded-lg transition-colors">Ver em Modal</button>
+      </div>
+    </div>
+
+    <!-- ===== MÓDULO 4.3 ===== -->
+    <div id="modulo-4-3" class="bg-dark-800 rounded-xl border border-dark-600 mb-6">
+      <div class="p-6 border-b border-dark-600">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-purple-400 font-bold">4.3</span>
+          <span class="text-xs text-neutral-500">~35 min</span>
+        </div>
+        <h3 class="text-2xl font-bold mb-2">🎯 Comparando modelos por papel</h3>
+        <p class="text-neutral-400 text-sm">Opus, Sonnet, Haiku × GPT × outros; raciocínio profundo × barato/rápido; quando trocar de modelo por papel do agente. Frota heterogênea.</p>
+      </div>
+      <div class="divide-y divide-dark-600">
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
+            <span class="font-medium">O princípio: modelo certo para o papel certo</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Cada papel de agente (raciocínio, execução, verificação, sumarização) tem requisitos diferentes de custo, velocidade e profundidade. Usar o mesmo modelo para tudo é desperdício ou risco.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">A diferença de custo entre Opus e Haiku pode ser 50×. Numa frota de 20 agentes, a escolha errada de modelo é cara e lenta sem motivo.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Papel = requisitos; modelo = recurso; otimização por papel, não por projeto.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">2</span>
+            <span class="font-medium">Opus, Sonnet, Haiku: quando usar cada um</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Opus = raciocínio complexo, planejamento, decisões de alto risco. Sonnet = execução equilibrada, código, análise. Haiku = triagem, sumarização, tarefas repetitivas de alto volume.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">A tabela Modelo × Papel é a espinha de qualquer frota bem dimensionada. Sem ela, você testa no escuro e paga demais ou recebe qualidade abaixo do esperado.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Raciocínio profundo × throughput; custo por token; latência de resposta; limites de contexto por modelo.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">3</span>
+            <span class="font-medium">GPT-4 e Codex: onde encaixam na frota</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">GPT-4 pode ocupar papéis de execução onde o time já tem créditos ou integrações existentes. Codex (GPT-4-turbo fine-tuned para código) tem vantagem em geração de código em contextos específicos.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Frotas heterogêneas são a realidade em empresas. Saber onde cada modelo tem vantagem comparativa evita brigas de time e otimiza o portfólio de fornecedores.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Vantagem comparativa; lock-in vs. flexibilidade; API abstraction layer para trocar modelos sem reescrever agentes.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">4</span>
+            <span class="font-medium">Frota heterogênea: exemplo real</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Orquestrador = Opus (planeja). Workers de execução = Sonnet (código, análise). Triagem e sumarização = Haiku. Verificação final = Opus ou Sonnet dependendo do risco.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">O exemplo concreto transforma o princípio em decisão. Você sai com um template de alocação de modelos que adapta para qualquer projeto.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Template de alocação; critério de upgrade (quando usar modelo mais caro); critério de downgrade (quando é seguro usar mais barato).</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">5</span>
+            <span class="font-medium">Quando trocar de provedor</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Sinais que indicam trocar de provedor por papel: indisponibilidade recorrente, custo acima do benchmark, limitação de ferramentas, requisito de latência não atendida.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">A decisão de trocar é frequentemente emocional ou política. Ter critérios objetivos por papel torna a decisão técnica e defensável.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">SLO por papel; custo de migração; abstraction layer; teste A/B de modelos.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">6</span>
+            <span class="font-medium">Montando sua matriz papel × modelo</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Exercício de mapear os papéis do seu sistema atual — ou planejado — e eleger o modelo mais adequado para cada um, com justificativa de custo e risco.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">A matriz é o documento de design da frota. Ela comunica intenção, facilita onboarding e serve como referência na hora de otimizar.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Papel, modelo escolhido, justificativa, custo estimado, modelo alternativo de fallback.</p></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="p-6 border-t border-dark-600 flex flex-wrap gap-3 justify-start">
+        <a href="modulo-4-3.html" class="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors">Ver Completo</a>
+        <button onclick="openModal('modal-4-3')" class="px-4 py-2 text-sm bg-dark-600 hover:bg-dark-500 rounded-lg transition-colors">Ver em Modal</button>
+      </div>
+    </div>
+
+    <!-- ===== MÓDULO 4.4 ===== -->
+    <div id="modulo-4-4" class="bg-dark-800 rounded-xl border border-dark-600 mb-6">
+      <div class="p-6 border-b border-dark-600">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-purple-400 font-bold">4.4</span>
+          <span class="text-xs text-neutral-500">~30 min</span>
+        </div>
+        <h3 class="text-2xl font-bold mb-2">🔒 Segurança</h3>
+        <p class="text-neutral-400 text-sm">Baixar `.md` de terceiros, prompt injection, subagente verificador read-only que nunca envia dados, higiene de permissões e MCP.</p>
+      </div>
+      <div class="divide-y divide-dark-600">
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
+            <span class="font-medium">O risco de baixar .md de terceiros</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Um arquivo `.md` de agente de fonte desconhecida pode conter instruções maliciosas embutidas no texto que o LLM executa como comandos ao processar o contexto.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">A superfície de ataque cresceu com os catálogos públicos. O risco é real: um agente importado pode exfiltrar dados, modificar arquivos ou criar backdoors.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Confiança zero em fontes externas; auditar antes de executar; checklist de revisão de `.md`.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">2</span>
+            <span class="font-medium">Prompt injection: como funciona</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Prompt injection é a inserção de instruções para o LLM dentro de dados que o agente vai ler — comentários de código, conteúdo de arquivos, resultados de APIs — fazendo-o desviar do comportamento esperado.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">O agente que lê código de um repositório ou resposta de uma API está potencialmente sendo instruído por esse conteúdo. Ignorar isso é a maior vulnerabilidade em sistemas multiagente.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Dados vs. instruções; contaminação de contexto; detecção de padrões suspeitos; sandboxing de entrada.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">3</span>
+            <span class="font-medium">Subagente verificador read-only</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Um agente com `disallowed-tools: [Bash, Edit, Write]` que só pode ler — nunca executar, nunca modificar, nunca enviar dados para fora. O isolamento é declarado no próprio `.md`.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">A verificação de conteúdo suspeito (um `.md` de terceiro, um arquivo de configuração) precisa ser feita por um agente que não pode causar dano mesmo se comprometido.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">`disallowed-tools`; princípio do menor privilégio; separação entre ler e agir; relatório estruturado sem side effects.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">4</span>
+            <span class="font-medium">Higiene de permissões</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Definir explicitamente quais ferramentas cada agente pode usar, revisando periodicamente se as permissões ainda correspondem ao papel atual — removendo o que não é mais necessário.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Permissões acumulam silenciosamente. Um agente de documentação que ganhou acesso ao Bash "por conveniência" é um risco que não aparece nos logs até ser tarde.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Mínimo privilégio; auditoria periódica; permissões explícitas vs. default; risco de scope creep.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">5</span>
+            <span class="font-medium">Segurança em MCP servers</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">MCPs expõem ferramentas externas para o agente. Um MCP comprometido ou malicioso pode exfiltrar dados, executar comandos remotos ou escalar privilégios sem que o agente perceba.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">O MCP é o ponto de integração mais poderoso — e mais perigoso. A superfície de ataque cresce com cada MCP adicionado sem revisão de segurança.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Confiança zero em MCPs externos; revisão de código do servidor MCP; escopo mínimo de ferramentas expostas; logs de chamadas.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">6</span>
+            <span class="font-medium">Auditando um .md suspeito: checklist</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Um checklist de 8 pontos para revisar qualquer `.md` antes de colocar em produção: origem, permissões declaradas, instruções ocultas, acesso a rede, escopo de ferramentas, exfiltração, backdoors de bypass e revisão por segundo par de olhos.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Um processo repetível é a única forma de auditar com consistência. O checklist vira o gate de aprovação antes de qualquer `.md` externo entrar no repo.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Gate de aprovação; revisão manual obrigatória; quarentena antes de produção; versão mínima viável de processo de segurança.</p></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="p-6 border-t border-dark-600 flex flex-wrap gap-3 justify-start">
+        <a href="modulo-4-4.html" class="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors">Ver Completo</a>
+        <button onclick="openModal('modal-4-4')" class="px-4 py-2 text-sm bg-dark-600 hover:bg-dark-500 rounded-lg transition-colors">Ver em Modal</button>
+      </div>
+    </div>
+
+    <!-- ===== MÓDULO 4.5 ===== -->
+    <div id="modulo-4-5" class="bg-dark-800 rounded-xl border border-dark-600 mb-6">
+      <div class="p-6 border-b border-dark-600">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-purple-400 font-bold">4.5</span>
+          <span class="text-xs text-neutral-500">~25 min</span>
+        </div>
+        <h3 class="text-2xl font-bold mb-2">📚 Bibliotecas e reuso</h3>
+        <p class="text-neutral-400 text-sm">awesome-claude-code-subagents e afins; copiar > criar; baixar .md, colocar em .claude/agents/, adaptar; cuidados de segurança ao importar.</p>
+      </div>
+      <div class="divide-y divide-dark-600">
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
+            <span class="font-medium">O ecossistema de agentes da comunidade</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Repositórios públicos como `awesome-claude-code-subagents` reúnem centenas de agentes prontos — security-auditor, test-runner, doc-writer, db-expert — mantidos pela comunidade.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Criar do zero custa tempo e introduz erros que outras pessoas já resolveram. Conhecer o ecossistema é o primeiro passo para acelerar sua biblioteca.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Catálogos curados vs. não-curados; critérios de qualidade; reputação do mantenedor; licença.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">2</span>
+            <span class="font-medium">Copiar > criar: o princípio do reuso</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Começar com um agente testado pela comunidade e adaptar é sistematicamente mais rápido e mais confiável do que criar do zero, mesmo que o resultado final seja quase idêntico.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">O NIH (not invented here) é caro em tempo e qualidade. O princípio do reuso muda o ponto de partida de "criar" para "encontrar + adaptar".</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Ponto de partida inteligente; adaptação vs. reescrita; custo de manutenção comparado.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">3</span>
+            <span class="font-medium">O fluxo: baixar → auditar → adaptar → usar</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Quatro passos: baixar o `.md` de origem confiável, auditar com o checklist de segurança (M4.4), adaptar nome/persona/ferramentas ao seu contexto, colocar em `.claude/agents/` e testar.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">O fluxo estruturado evita o atalho perigoso de baixar e usar sem auditar. A etapa de auditoria não é opcional mesmo em fontes confiáveis.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Quarentena; gate de auditoria; adaptação mínima vs. completa; teste de smoke após importação.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">4</span>
+            <span class="font-medium">Adaptando um agente da comunidade</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Walkthrough de adaptação de um `security-reviewer` genérico para o contexto de um projeto Python específico: ajuste de persona, contexto de projeto, ferramentas e exemplos inline.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">A adaptação é onde a maioria erra — ou não adapta nada (agente genérico demais) ou reescreve tudo (perde os benefícios do reuso). O exemplo mostra o equilíbrio.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">O que adaptar (persona, contexto, exemplos) vs. o que manter (lógica de decisão, formato de saída, safety).</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">5</span>
+            <span class="font-medium">Cuidados ao manter agentes importados</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Agentes importados podem receber updates no repositório de origem. Você precisa decidir: sincronizar com o original, manter fork local ou congelar a versão. Cada escolha tem trade-offs.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">A gestão do ciclo de vida do agente importado é ignorada na fase de adoção e vira dívida técnica depois. Decidir a estratégia no início poupa retrabalho.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Fork vs. upstream sync; changelog tracking; versão mínima testada; política de update.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">6</span>
+            <span class="font-medium">Contribuindo de volta para a comunidade</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Quando e como publicar seus agentes adaptados de volta — anonimizando contexto de projeto, adicionando README, escolhendo licença e submetendo PR para catálogos curados.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">A qualidade dos catálogos depende de contribuições. Publicar força você a generalizar bem o agente, o que frequentemente melhora a versão interna também.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Anonimização de dados sensíveis; README mínimo; critérios de qualidade do catálogo; licença compatível.</p></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="p-6 border-t border-dark-600 flex flex-wrap gap-3 justify-start">
+        <a href="modulo-4-5.html" class="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors">Ver Completo</a>
+        <button onclick="openModal('modal-4-5')" class="px-4 py-2 text-sm bg-dark-600 hover:bg-dark-500 rounded-lg transition-colors">Ver em Modal</button>
+      </div>
+    </div>
+
+    <!-- ===== MÓDULO 4.6 ===== -->
+    <div id="modulo-4-6" class="bg-dark-800 rounded-xl border border-dark-600 mb-6">
+      <div class="p-6 border-b border-dark-600">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-purple-400 font-bold">4.6</span>
+          <span class="text-xs text-neutral-500">~25 min</span>
+        </div>
+        <h3 class="text-2xl font-bold mb-2">🏭 Montando seu sistema</h3>
+        <p class="text-neutral-400 text-sm">Sua biblioteca de especialistas; templates prontos; checklist de produção; recap geral do curso — da fundação ao sistema em produção.</p>
+      </div>
+      <div class="divide-y divide-dark-600">
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
+            <span class="font-medium">Sua biblioteca de especialistas</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Um conjunto pessoal de agentes reutilizáveis organizados em `.claude/agents/` — security-auditor, test-runner, doc-writer, db-expert, code-reviewer — que você mantém e evolui ao longo do tempo.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">A biblioteca é o ativo que cresce com você. Cada projeto bem executado adiciona um agente ao acervo; com o tempo, você começa novos projetos já com especialistas prontos.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Acervo pessoal; versionamento da biblioteca; README por agente; categorias (segurança, teste, docs, infra, dados).</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">2</span>
+            <span class="font-medium">Pacote inicial: 5 agentes essenciais</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Os 5 agentes que cobrem 80% das necessidades na maioria dos projetos de software: security-reviewer (read-only), test-runner, doc-writer, code-reviewer e db-migration-checker.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Ter um pacote inicial definido elimina a paralisia de decisão. Você começa com um conjunto coeso e expande conforme necessidade real, não antecipação.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Cobertura de 80%; conjunto mínimo coeso; critério de adição (necessidade real demonstrada); não antecipar.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">3</span>
+            <span class="font-medium">Templates prontos para o dia a dia</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Templates de `.md` com estrutura padrão (nome, persona, descrição, ferramentas, disallowed-tools, exemplos) que você preenche em minutos para qualquer novo papel de agente.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Um template bem feito garante que você não esquece campos críticos (disallowed-tools, exemplos de uso) e mantém consistência entre todos os agentes da biblioteca.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Template mínimo vs. template completo; campos obrigatórios vs. opcionais; consistência como meta.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">4</span>
+            <span class="font-medium">Checklist de produção</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Um gate de 10 pontos antes de colocar qualquer agente em uso real: permissões revisadas, disallowed-tools explícito, exemplos testados, persona clara, sem instruções ambíguas, auditoria de segurança.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">Agentes que não passam por checklist antes de produção acumulam comportamentos inesperados. O checklist é o equivalente do code review para `.md`.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Gate de produção; revisão de par; smoke test; critério de "pronto para usar".</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">5</span>
+            <span class="font-medium">Projeto final: desenhar e criar sua suíte</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">O exercício de conclusão do curso: mapear os papéis do seu trabalho real, eleger modelos para cada um, criar 3 agentes da biblioteca pessoal e documentar a frota desenhada.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">O aprendizado se consolida na aplicação. O projeto final fecha o ciclo: do modelo mental (T1) à frota em produção (T4).</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Aplicação ao contexto real; 3 agentes mínimos; documentação da frota; critério de verificação — "como sei que acertei".</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="topic-item">
+          <button onclick="toggleTopic(this)" class="w-full px-6 py-4 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">6</span>
+            <span class="font-medium">Recap: de T1 a T4 em uma página</span>
+          </button>
+          <div class="topic-explanation px-6 pb-4">
+            <div class="space-y-3 text-sm">
+              <div><span class="text-purple-400 font-semibold">O que é:</span><p class="text-neutral-300">Síntese das quatro trilhas: T1 (modelo mental) → T2 (criar o `.md`) → T3 (orquestrar e economizar) → T4 (escalar, proteger e reutilizar). Uma visão panorâmica do que você aprendeu.</p></div>
+              <div><span class="text-purple-400 font-semibold">Por que aprender:</span><p class="text-neutral-300">O recap consolida o mapa mental completo e mostra a progressão de fundamentos a sistema avançado — o que facilita revisar, ensinar ou adaptar para novos contextos.</p></div>
+              <div><span class="text-purple-400 font-semibold">Conceitos-chave:</span><p class="text-neutral-300">Progressão T1→T4; conceitos-âncora de cada trilha; próximos passos; onde aprofundar.</p></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="p-6 border-t border-dark-600 flex flex-wrap gap-3 justify-start">
+        <a href="modulo-4-6.html" class="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors">Ver Completo</a>
+        <button onclick="openModal('modal-4-6')" class="px-4 py-2 text-sm bg-dark-600 hover:bg-dark-500 rounded-lg transition-colors">Ver em Modal</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-dark-600 py-8 mt-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-neutral-500 text-sm">
+      <p>Curso Subagentes · <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300">INEMA.CLUB</a></p>
+    </div>
+  </footer>
+
+  <!-- MODAIS (iframe) -->
+  <div id="modal-4-1" class="modal hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80" onclick="if(event.target === this) closeModal()">
+    <div class="bg-dark-800 rounded-xl w-full max-w-6xl h-[95vh] flex flex-col border border-dark-600">
+      <div class="p-4 border-b border-dark-600 flex justify-between items-center">
+        <div class="flex items-center space-x-3"><span class="text-purple-400 font-bold">4.1</span><span class="font-semibold">Arquitetura multiagente em escala</span></div>
+        <button onclick="closeModal()" class="text-neutral-400 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+      <iframe src="modulo-4-1.html" class="flex-1 w-full rounded-b-xl"></iframe>
+    </div>
+  </div>
+
+  <div id="modal-4-2" class="modal hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80" onclick="if(event.target === this) closeModal()">
+    <div class="bg-dark-800 rounded-xl w-full max-w-6xl h-[95vh] flex flex-col border border-dark-600">
+      <div class="p-4 border-b border-dark-600 flex justify-between items-center">
+        <div class="flex items-center space-x-3"><span class="text-purple-400 font-bold">4.2</span><span class="font-semibold">Subagentes no Codex e outros ambientes</span></div>
+        <button onclick="closeModal()" class="text-neutral-400 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+      <iframe src="modulo-4-2.html" class="flex-1 w-full rounded-b-xl"></iframe>
+    </div>
+  </div>
+
+  <div id="modal-4-3" class="modal hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80" onclick="if(event.target === this) closeModal()">
+    <div class="bg-dark-800 rounded-xl w-full max-w-6xl h-[95vh] flex flex-col border border-dark-600">
+      <div class="p-4 border-b border-dark-600 flex justify-between items-center">
+        <div class="flex items-center space-x-3"><span class="text-purple-400 font-bold">4.3</span><span class="font-semibold">Comparando modelos por papel</span></div>
+        <button onclick="closeModal()" class="text-neutral-400 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+      <iframe src="modulo-4-3.html" class="flex-1 w-full rounded-b-xl"></iframe>
+    </div>
+  </div>
+
+  <div id="modal-4-4" class="modal hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80" onclick="if(event.target === this) closeModal()">
+    <div class="bg-dark-800 rounded-xl w-full max-w-6xl h-[95vh] flex flex-col border border-dark-600">
+      <div class="p-4 border-b border-dark-600 flex justify-between items-center">
+        <div class="flex items-center space-x-3"><span class="text-purple-400 font-bold">4.4</span><span class="font-semibold">Segurança</span></div>
+        <button onclick="closeModal()" class="text-neutral-400 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+      <iframe src="modulo-4-4.html" class="flex-1 w-full rounded-b-xl"></iframe>
+    </div>
+  </div>
+
+  <div id="modal-4-5" class="modal hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80" onclick="if(event.target === this) closeModal()">
+    <div class="bg-dark-800 rounded-xl w-full max-w-6xl h-[95vh] flex flex-col border border-dark-600">
+      <div class="p-4 border-b border-dark-600 flex justify-between items-center">
+        <div class="flex items-center space-x-3"><span class="text-purple-400 font-bold">4.5</span><span class="font-semibold">Bibliotecas e reuso</span></div>
+        <button onclick="closeModal()" class="text-neutral-400 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+      <iframe src="modulo-4-5.html" class="flex-1 w-full rounded-b-xl"></iframe>
+    </div>
+  </div>
+
+  <div id="modal-4-6" class="modal hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80" onclick="if(event.target === this) closeModal()">
+    <div class="bg-dark-800 rounded-xl w-full max-w-6xl h-[95vh] flex flex-col border border-dark-600">
+      <div class="p-4 border-b border-dark-600 flex justify-between items-center">
+        <div class="flex items-center space-x-3"><span class="text-purple-400 font-bold">4.6</span><span class="font-semibold">Montando seu sistema</span></div>
+        <button onclick="closeModal()" class="text-neutral-400 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+      <iframe src="modulo-4-6.html" class="flex-1 w-full rounded-b-xl"></iframe>
+    </div>
+  </div>
+
+  <script>
+    // Theme toggle
+    const toggle = document.getElementById('theme-toggle');
+    const darkIcon = document.getElementById('theme-toggle-dark-icon');
+    const lightIcon = document.getElementById('theme-toggle-light-icon');
+
+    function applyTheme(isDark) {
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        darkIcon.classList.add('hidden');
+        lightIcon.classList.remove('hidden');
+      } else {
+        document.documentElement.classList.remove('dark');
+        darkIcon.classList.remove('hidden');
+        lightIcon.classList.add('hidden');
+      }
+    }
+
+    const saved = localStorage.getItem('theme');
+    applyTheme(saved !== 'light');
+
+    toggle.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      localStorage.setItem('theme', isDark ? 'light' : 'dark');
+      applyTheme(!isDark);
+    });
+
+    // Topic toggle
+    function toggleTopic(btn) {
+      const exp = btn.nextElementSibling;
+      const isActive = exp.classList.contains('active');
+      // fecha todos
+      document.querySelectorAll('.topic-explanation.active').forEach(el => el.classList.remove('active'));
+      if (!isActive) exp.classList.add('active');
+    }
+
+    // Modal
+    let currentModal = null;
+    function openModal(id) {
+      if (currentModal) closeModal();
+      const modal = document.getElementById(id);
+      if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        currentModal = modal;
+      }
+    }
+    function closeModal() {
+      if (currentModal) {
+        currentModal.classList.add('hidden');
+        document.body.style.overflow = '';
+        // limpa iframe para parar carregamento
+        const iframe = currentModal.querySelector('iframe');
+        if (iframe) { const src = iframe.src; iframe.src = ''; iframe.src = src; }
+        currentModal = null;
+      }
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+  </script>
+</body>
+</html>
