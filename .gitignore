@@ -1,0 +1,6 @@
+node_modules/
+_build/remotion/node_modules/
+_build/remotion/out/
+.DS_Store
+*.log
+.vercel

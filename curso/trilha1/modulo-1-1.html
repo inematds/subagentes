@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>O que é um subagente | Subagentes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#FACC15',
+            dark: { 900: '#111827', 800: '#1f2937', 700: '#374151', 600: '#4b5563' }
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .dark body { background-color: #111827; }
+    .topic-explanation { display: none; }
+    .topic-explanation.active { display: block; }
+
+    /* Light mode overrides - OBRIGATORIO (base) */
+    html:not(.dark) body { background-color: #f8fafc; }
+    html:not(.dark) .bg-dark-900 { background-color: #ffffff; }
+    html:not(.dark) .bg-dark-800 { background-color: #f9fafb; }
+    html:not(.dark) .bg-dark-700 { background-color: #f3f4f6; }
+    html:not(.dark) .bg-dark-600 { background-color: #e5e7eb; }
+    html:not(.dark) .text-neutral-100 { color: #111827; }
+    html:not(.dark) .text-neutral-300 { color: #4b5563; }
+    html:not(.dark) .text-neutral-400 { color: #6b7280; }
+    html:not(.dark) .text-neutral-500 { color: #9ca3af; }
+    html:not(.dark) .border-dark-600 { border-color: #d1d5db; }
+    html:not(.dark) .border-dark-700 { border-color: #e5e7eb; }
+
+    /* Light mode - cores de acento (trilha emerald T1) */
+    html:not(.dark) .text-emerald-400 { color: #059669; }
+    html:not(.dark) .bg-emerald-500\/20 { background-color: rgba(5, 150, 105, 0.12); }
+    html:not(.dark) .bg-emerald-500\/10 { background-color: rgba(5, 150, 105, 0.08); }
+    html:not(.dark) .border-emerald-500\/30 { border-color: rgba(5, 150, 105, 0.25); }
+    html:not(.dark) .hover\:bg-emerald-500\/30:hover { background-color: rgba(5, 150, 105, 0.18); }
+    html:not(.dark) .hover\:text-emerald-400:hover { color: #059669; }
+    html:not(.dark) .hover\:bg-emerald-500\/10:hover { background-color: rgba(5, 150, 105, 0.08); }
+
+    /* Light mode - cores de apoio usadas nos boxes (blue dados / red erros) */
+    html:not(.dark) .text-blue-400 { color: #2563eb; }
+    html:not(.dark) .bg-blue-900\/20 { background-color: rgba(37, 99, 235, 0.08); }
+    html:not(.dark) .border-blue-500\/30 { border-color: rgba(37, 99, 235, 0.25); }
+    html:not(.dark) .text-red-400 { color: #dc2626; }
+    html:not(.dark) .bg-red-900\/20 { background-color: rgba(220, 38, 38, 0.08); }
+    html:not(.dark) .border-red-500\/30 { border-color: rgba(220, 38, 38, 0.25); }
+    html:not(.dark) .bg-emerald-900\/20 { background-color: rgba(5, 150, 105, 0.08); }
+
+    /* Light mode - remove gradientes (fundo uniforme) */
+    html:not(.dark) [class*="bg-gradient-to"] { background-image: none !important; }
+
+    /* Light mode - cores especiais */
+    html:not(.dark) .text-primary { color: #a16207; }
+    html:not(.dark) .bg-primary\/10 { background-color: rgba(161, 98, 7, 0.08); }
+    html:not(.dark) .border-primary\/30 { border-color: rgba(161, 98, 7, 0.25); }
+    html:not(.dark) .border-primary\/40 { border-color: rgba(161, 98, 7, 0.25); }
+    html:not(.dark) .text-sky-400 { color: #0369a1; }
+    html:not(.dark) .text-yellow-400 { color: #a16207; }
+    html:not(.dark) .hover\:text-sky-300:hover { color: #0284c7; }
+    html:not(.dark) .hover\:text-yellow-300:hover { color: #854d0e; }
+
+    /* Light mode - nav */
+    html:not(.dark) .bg-dark-900\/95 { background-color: rgba(255, 255, 255, 0.95); }
+
+    /* Light mode - diagramas SVG menos neon */
+    html:not(.dark) svg[role="img"] { filter: saturate(0.82) brightness(0.96); }
+
+    /* Dark mode - bordas e linhas divisorias mais suaves (OBRIGATORIO) */
+    .dark .border-dark-600 { border-color: #374151; }
+    .dark .divide-dark-600 > :not([hidden]) ~ :not([hidden]) { border-color: #374151; }
+
+    /* Pulso dos agentes nos diagramas (apenas se o usuario permitir movimento) */
+    @keyframes wf-pulse { 0%,100% { opacity:.55 } 50% { opacity:1 } }
+    @keyframes wf-bar { from { transform: translateX(-6%); } to { transform: translateX(0); } }
+    @media (prefers-reduced-motion: no-preference) {
+      .wf-a { animation: wf-pulse 2.6s ease-in-out infinite; }
+      .wf-a:nth-child(2){animation-delay:.2s} .wf-a:nth-child(3){animation-delay:.4s}
+      .wf-a:nth-child(4){animation-delay:.6s} .wf-a:nth-child(5){animation-delay:.8s}
+      .barfill { animation: wf-bar 3s ease-in-out infinite alternate; }
+      .barfill.b2{animation-delay:.5s} .barfill.b3{animation-delay:1s} .barfill.b4{animation-delay:1.4s} .barfill.b5{animation-delay:1.8s}
+    }
+  </style>
+</head>
+<body class="bg-dark-900 text-neutral-100 min-h-screen">
+
+  <!-- NAVIGATION -->
+  <nav class="sticky top-0 z-50 bg-dark-900/95 backdrop-blur-sm border-b border-dark-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-14">
+        <!-- Logo + INEMA.CLUB -->
+        <div class="flex items-center space-x-4">
+          <a href="../../index.html" class="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300">
+            <span class="text-2xl">🤖</span>
+            <span class="font-bold text-lg hidden sm:inline">Subagentes</span>
+          </a>
+          <span class="text-neutral-600">|</span>
+          <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 text-sm font-medium">INEMA.CLUB</a>
+        </div>
+
+        <!-- Trilhas + Theme Toggle -->
+        <div class="flex items-center space-x-1 sm:space-x-2">
+          <!-- Trilha 1 (ativa) -->
+          <a href="index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-emerald-400 bg-emerald-500/10">
+            <span class="sm:hidden">T1</span>
+            <span class="hidden sm:inline">Fundamentos</span>
+          </a>
+          <!-- Trilha 2 -->
+          <a href="../trilha2/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
+            <span class="sm:hidden">T2</span>
+            <span class="hidden sm:inline">Na prática</span>
+          </a>
+          <!-- Trilha 3 -->
+          <a href="../trilha3/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+            <span class="sm:hidden">T3</span>
+            <span class="hidden sm:inline">Orquestração</span>
+          </a>
+          <!-- Trilha 4 -->
+          <a href="../trilha4/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-purple-400 hover:bg-purple-500/10 transition-colors">
+            <span class="sm:hidden">T4</span>
+            <span class="hidden sm:inline">Avançado</span>
+          </a>
+
+          <!-- Theme Toggle -->
+          <button id="theme-toggle" class="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 transition-colors ml-2">
+            <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+            </svg>
+            <svg id="theme-toggle-light-icon" class="hidden w-5 h-5 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- BREADCRUMB -->
+  <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div class="flex items-center space-x-2 text-sm text-neutral-400">
+      <a href="../../index.html" class="hover:text-emerald-400">Início</a>
+      <span>/</span>
+      <a href="index.html" class="hover:text-emerald-400">Trilha 1</a>
+      <span>/</span>
+      <span class="text-emerald-400">Módulo 1.1</span>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <header class="bg-gradient-to-br from-emerald-900/30 via-dark-800 to-dark-800 py-12 border-b border-dark-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <span class="inline-block px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-full mb-4">
+        MÓDULO 1.1 · Trilha 1 · Fundamentos
+      </span>
+      <h1 class="text-2xl sm:text-3xl font-bold mb-4">🤖 O que é um subagente</h1>
+      <p class="text-lg text-neutral-400 max-w-3xl">
+        Antes de criar qualquer coisa, é preciso entender o modelo mental certo. O chat principal é um
+        <strong class="text-emerald-400">maestro</strong> que delega tarefas a <strong class="text-emerald-400">especialistas</strong> —
+        e recebe de volta um relatório limpo, sem carregar todo o trabalho sujo.
+      </p>
+
+      <!-- Stats Banner -->
+      <div class="grid grid-cols-4 gap-4 mt-8 max-w-2xl">
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-emerald-400">6</div>
+          <div class="text-xs text-neutral-400">Tópicos</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-emerald-400">~25</div>
+          <div class="text-xs text-neutral-400">Minutos</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-emerald-400">Básico</div>
+          <div class="text-xs text-neutral-400">Nível</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-emerald-400">Teoria</div>
+          <div class="text-xs text-neutral-400">Tipo</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEUDO -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <!-- ABERTURA + SVG FAN-OUT -->
+    <section class="mb-12">
+      <p class="text-neutral-300 mb-8 leading-relaxed max-w-3xl">
+        Imagine que você é um <strong class="text-emerald-400">empreiteiro geral</strong> tocando uma obra. Você não assenta cada
+        tijolo: chama o eletricista, o encanador, o pintor — cada um faz a parte dele e te entrega o serviço pronto. No Claude Code
+        funciona igual. Você conversa com o <strong class="text-emerald-400">maestro</strong> (o chat principal). Quando aparece um
+        trabalho pesado, o maestro dispara <strong class="text-emerald-400">subagentes</strong>: especialistas que fazem o serviço
+        numa janela separada e devolvem só o <strong class="text-emerald-400">resumo</strong>. Esse é o desenho que você precisa gravar.
+      </p>
+
+      <div class="rounded-2xl border border-emerald-500/30 bg-dark-900/40 p-3 sm:p-4 mb-2 overflow-hidden">
+        <svg viewBox="0 0 1000 240" class="w-full h-auto" role="img" aria-label="O maestro dispara vários subagentes em paralelo, cada um trabalha em sua própria janela, e todos convergem num único resumo que volta para você">
+          <defs>
+            <linearGradient id="m11-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#34d399"/><stop offset="1" stop-color="#10b981"/>
+            </linearGradient>
+            <filter id="m11-glow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <pattern id="m11-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+              <circle cx="1.3" cy="1.3" r="1.3" fill="#10b981" opacity="0.12"/>
+            </pattern>
+            <marker id="m11-ah" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 L2.4,4.5 Z" fill="#34d399"/></marker>
+            <marker id="m11-ahc" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 L2.4,4.5 Z" fill="#38bdf8"/></marker>
+          </defs>
+          <rect x="0" y="0" width="1000" height="240" fill="url(#m11-grid)"/>
+          <!-- setas maestro -> agentes -->
+          <g fill="none" stroke="#34d399" stroke-width="1.8" opacity="0.5">
+            <path d="M196,120 C300,120 320,38 452,38" marker-end="url(#m11-ah)"/>
+            <path d="M196,120 C300,120 320,79 452,79" marker-end="url(#m11-ah)"/>
+            <path d="M196,120 L452,120" marker-end="url(#m11-ah)"/>
+            <path d="M196,120 C300,120 320,161 452,161" marker-end="url(#m11-ah)"/>
+            <path d="M196,120 C300,120 320,202 452,202" marker-end="url(#m11-ah)"/>
+          </g>
+          <!-- setas agentes -> resumo -->
+          <g fill="none" stroke="#38bdf8" stroke-width="1.8" opacity="0.5">
+            <path d="M588,38  C700,38 720,120 800,120" marker-end="url(#m11-ahc)"/>
+            <path d="M588,79  C700,79 720,120 800,120" marker-end="url(#m11-ahc)"/>
+            <path d="M588,120 L800,120" marker-end="url(#m11-ahc)"/>
+            <path d="M588,161 C700,161 720,120 800,120" marker-end="url(#m11-ahc)"/>
+            <path d="M588,202 C700,202 720,120 800,120" marker-end="url(#m11-ahc)"/>
+          </g>
+          <!-- maestro -->
+          <g filter="url(#m11-glow)"><rect x="40" y="88" width="156" height="64" rx="14" fill="#0e2018" stroke="url(#m11-grad)" stroke-width="2"/></g>
+          <text x="118" y="114" text-anchor="middle" fill="#34d399" font-family="Inter,sans-serif" font-weight="600" font-size="19">Maestro</text>
+          <text x="118" y="134" text-anchor="middle" fill="#9fe7c6" font-family="Inter,sans-serif" font-size="12">o chat principal</text>
+          <!-- agentes -->
+          <g font-family="Inter,sans-serif" font-size="13" font-weight="600">
+            <g class="wf-a"><rect x="452" y="22"  width="136" height="32" rx="9" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="520" y="43"  text-anchor="middle" fill="#bfe6ff">subagente</text></g>
+            <g class="wf-a"><rect x="452" y="63"  width="136" height="32" rx="9" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="520" y="84"  text-anchor="middle" fill="#bfe6ff">subagente</text></g>
+            <g class="wf-a"><rect x="452" y="104" width="136" height="32" rx="9" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="520" y="125" text-anchor="middle" fill="#bfe6ff">subagente</text></g>
+            <g class="wf-a"><rect x="452" y="145" width="136" height="32" rx="9" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="520" y="166" text-anchor="middle" fill="#bfe6ff">subagente</text></g>
+            <g class="wf-a"><rect x="452" y="186" width="136" height="32" rx="9" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="520" y="207" text-anchor="middle" fill="#bfe6ff">subagente …</text></g>
+          </g>
+          <!-- resumo -->
+          <g filter="url(#m11-glow)"><rect x="800" y="88" width="156" height="64" rx="14" fill="#0e2018" stroke="url(#m11-grad)" stroke-width="2"/></g>
+          <text x="878" y="116" text-anchor="middle" fill="#34d399" font-family="Inter,sans-serif" font-weight="600" font-size="17">Resumo</text>
+          <text x="878" y="135" text-anchor="middle" fill="#9fe7c6" font-family="Inter,sans-serif" font-size="12">volta para você</text>
+        </svg>
+      </div>
+      <p class="text-xs text-neutral-500 mb-0">↑ O fluxo do subagente: um dispara, muitos trabalham em paralelo, um resumo volta.</p>
+    </section>
+
+    <!-- DIVISOR -->
+    <h2 class="text-2xl font-bold mb-6">Conteúdo detalhado</h2>
+
+    <!-- TÓPICO 1 — O maestro e o especialista -->
+    <section id="topico-1" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">1</span>
+        <h2 class="text-2xl font-bold">🎼 O maestro e o especialista</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        O chat com que você conversa é o <strong class="text-emerald-400">orquestrador</strong> — o maestro. Ele entende o pedido,
+        decide o que precisa ser feito e, quando a tarefa é grande, <strong class="text-emerald-400">delega a um especialista</strong>.
+        Você nunca para de falar com o maestro: ele é o seu ponto de contato do início ao fim.
+      </p>
+
+      <div class="bg-gradient-to-br from-emerald-900/30 to-dark-800 rounded-xl border border-emerald-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-emerald-400 mb-4 flex items-center">
+          <span class="mr-2">🏗️</span> A analogia do empreiteiro geral
+        </h3>
+        <p class="text-neutral-300 mb-4">
+          O empreiteiro geral não assenta tijolo, não passa fio, não pinta parede. Ele <strong>coordena</strong>. Cada especialista
+          chega, faz a parte dele com perícia e entrega. O empreiteiro junta tudo e te dá a obra pronta. O maestro do Claude Code é
+          esse empreiteiro:
+        </p>
+        <ul class="space-y-2 text-neutral-300">
+          <li class="flex items-start space-x-2"><span class="text-emerald-400 mt-1">•</span><span><strong>Maestro</strong> = o chat principal. Entende, planeja, delega, junta.</span></li>
+          <li class="flex items-start space-x-2"><span class="text-emerald-400 mt-1">•</span><span><strong>Subagente</strong> = o especialista. Recebe uma tarefa única e foca só nela.</span></li>
+          <li class="flex items-start space-x-2"><span class="text-emerald-400 mt-1">•</span><span><strong>Você</strong> = o dono da obra. Fala só com o maestro, vê o resultado.</span></li>
+        </ul>
+      </div>
+
+      <!-- 3 SECOES OBRIGATORIAS -->
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3 mb-6">
+        <div>
+          <span class="text-emerald-400 font-semibold">O que é:</span>
+          <p class="text-neutral-300 text-sm">O maestro é o agente principal — quem conduz a conversa e distribui o trabalho. O subagente é um trabalhador que ele aciona sob demanda para uma tarefa específica.</p>
+        </div>
+        <div>
+          <span class="text-emerald-400 font-semibold">Por que aprender:</span>
+          <p class="text-neutral-300 text-sm">Sem esse modelo na cabeça, você tenta "conversar" com o subagente ou espera que ele lembre da conversa toda. Entender quem coordena e quem executa evita 90% da confusão inicial.</p>
+        </div>
+        <div>
+          <span class="text-emerald-400 font-semibold">Conceitos-chave:</span>
+          <p class="text-neutral-300 text-sm">Orquestrador × executor · delegação sob demanda · ponto de contato único (você ↔ maestro).</p>
+        </div>
+      </div>
+
+      <!-- Conceitos-chave: 4 mini-cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-dark-800 rounded-lg p-4 border border-dark-600 text-center"><div class="text-2xl mb-1">🎼</div><div class="text-sm font-semibold text-emerald-400">Maestro</div><div class="text-xs text-neutral-400">coordena</div></div>
+        <div class="bg-dark-800 rounded-lg p-4 border border-dark-600 text-center"><div class="text-2xl mb-1">🔧</div><div class="text-sm font-semibold text-emerald-400">Especialista</div><div class="text-xs text-neutral-400">executa</div></div>
+        <div class="bg-dark-800 rounded-lg p-4 border border-dark-600 text-center"><div class="text-2xl mb-1">📦</div><div class="text-sm font-semibold text-emerald-400">Entrega</div><div class="text-xs text-neutral-400">resumo</div></div>
+        <div class="bg-dark-800 rounded-lg p-4 border border-dark-600 text-center"><div class="text-2xl mb-1">👤</div><div class="text-sm font-semibold text-emerald-400">Você</div><div class="text-xs text-neutral-400">vê o todo</div></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 2 — O ciclo (timeline) -->
+    <section id="topico-2" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">2</span>
+        <h2 class="text-2xl font-bold">🔁 O ciclo: tarefa → janela própria → relatório</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        O coração do subagente é o <strong class="text-emerald-400">contexto separado</strong>. Quando o maestro delega, o subagente
+        abre uma <strong class="text-emerald-400">janela própria</strong> — uma sessão limpa, isolada da sua conversa. Ele faz o
+        trabalho ali, gera toda a bagunça que precisar, e devolve apenas um <strong class="text-emerald-400">relatório</strong>. O
+        maestro lê esse relatório e te comunica de volta. A sua janela nunca vê a sujeira.
+      </p>
+
+      <!-- TIMELINE -->
+      <div class="space-y-6 mb-6">
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center"><span class="text-emerald-400 font-bold">1</span></div>
+          <div class="flex-1 bg-dark-800 rounded-xl p-6 border border-dark-600">
+            <h4 class="font-semibold text-white mb-2">A tarefa é despachada</h4>
+            <p class="text-sm text-neutral-400 mb-3">O maestro identifica um trabalho pesado.</p>
+            <p class="text-neutral-300 text-sm">Ele escreve um briefing claro e entrega ao subagente: "leia estes 40 arquivos e me diga onde o login quebra".</p>
+          </div>
+        </div>
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center"><span class="text-emerald-400 font-bold">2</span></div>
+          <div class="flex-1 bg-dark-800 rounded-xl p-6 border border-dark-600">
+            <h4 class="font-semibold text-white mb-2">O subagente trabalha na janela dele</h4>
+            <p class="text-sm text-neutral-400 mb-3">Sessão própria, isolada, descartável.</p>
+            <p class="text-neutral-300 text-sm">Ele abre arquivos, roda buscas, acumula centenas de linhas de leitura — tudo dentro do contexto dele, que some quando termina.</p>
+          </div>
+        </div>
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center"><span class="text-emerald-400 font-bold">3</span></div>
+          <div class="flex-1 bg-dark-800 rounded-xl p-6 border border-dark-600">
+            <h4 class="font-semibold text-white mb-2">O relatório volta limpo</h4>
+            <p class="text-sm text-neutral-400 mb-3">O maestro comunica a você.</p>
+            <p class="text-neutral-300 text-sm">O subagente devolve a conclusão: "o bug está no <code class="text-emerald-400">auth.js</code>, linha 88". O maestro repassa isso a você — sem os 40 arquivos no caminho.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-blue-900/20 rounded-xl border border-blue-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-blue-400 mb-3 flex items-center"><span class="mr-2">📊</span> Por que a janela própria importa</h3>
+        <p class="text-neutral-300">O subagente pode "queimar" 200 mil tokens lendo arquivos e isso <strong>não</strong> ocupa um único token da sua sessão. Você fica com a conclusão; a leitura bruta ficou na janela descartável dele. É proteção de contexto — o tema do próximo módulo.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-emerald-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">o ciclo de três tempos — despacho, trabalho isolado, relatório de volta.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">é o que diferencia delegar de "fazer você mesmo no mesmo chat": a sujeira fica fora da sua janela.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">janela própria · sessão descartável · relatório (não a conversa inteira).</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 3 — A demo das 5 personas (monitor-mock será a tela; aqui as personas) -->
+    <section id="topico-3" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">3</span>
+        <h2 class="text-2xl font-bold">🎭 A demo das 5 personas</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        O exemplo clássico: você pede ao maestro para <strong class="text-emerald-400">revisar um livro</strong> sob cinco olhares
+        diferentes. Em vez de fazer cinco leituras em sequência, ele abre <strong class="text-emerald-400">cinco subagentes em
+        paralelo</strong> — cada um com uma <strong class="text-emerald-400">lente</strong> própria. Rodam ao mesmo tempo, cada um na
+        sua janela. E você pode <strong class="text-emerald-400">entrar em cada sessão</strong> e ver exatamente o prompt que o maestro
+        mandou para aquele especialista.
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+          <div class="text-2xl mb-2">👩‍🏫</div>
+          <h4 class="font-semibold text-emerald-400 mb-1">Linda, 58</h4>
+          <p class="text-xs text-neutral-400 mb-2">Professora aposentada · iniciante em IA</p>
+          <p class="text-neutral-300 text-sm">"Isto faz sentido para quem nunca ouviu falar do assunto? Onde travei?"</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+          <div class="text-2xl mb-2">👨‍💻</div>
+          <h4 class="font-semibold text-emerald-400 mb-1">Engenheiro de software</h4>
+          <p class="text-xs text-neutral-400 mb-2">Olhar técnico</p>
+          <p class="text-neutral-300 text-sm">"Os exemplos de código estão corretos? Falta rigor em algum ponto?"</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+          <div class="text-2xl mb-2">💼</div>
+          <h4 class="font-semibold text-emerald-400 mb-1">Dono de negócio</h4>
+          <p class="text-xs text-neutral-400 mb-2">Olhar de retorno</p>
+          <p class="text-neutral-300 text-sm">"Qual o valor prático? Isto me ajuda a ganhar ou economizar dinheiro?"</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+          <div class="text-2xl mb-2">🏢</div>
+          <h4 class="font-semibold text-emerald-400 mb-1">David, 52</h4>
+          <p class="text-xs text-neutral-400 mb-2">COO de Fortune 500 · olhar de escala</p>
+          <p class="text-neutral-300 text-sm">"Isto funciona com 5.000 funcionários? Onde quebra na operação grande?"</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+          <div class="text-2xl mb-2">✍️</div>
+          <h4 class="font-semibold text-emerald-400 mb-1">Editor / publisher</h4>
+          <p class="text-xs text-neutral-400 mb-2">Olhar editorial</p>
+          <p class="text-neutral-300 text-sm">"O texto flui? O argumento se sustenta do começo ao fim?"</p>
+        </div>
+        <div class="bg-emerald-900/20 rounded-xl p-5 border border-emerald-500/30 flex flex-col justify-center">
+          <div class="text-2xl mb-2">⚡</div>
+          <h4 class="font-semibold text-emerald-400 mb-1">Cinco em paralelo</h4>
+          <p class="text-neutral-300 text-sm">Cinco lentes, ao mesmo tempo, cada uma na sua janela. O maestro junta os cinco relatórios.</p>
+        </div>
+      </div>
+
+      <div class="bg-primary/10 rounded-xl border border-primary/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-primary mb-3 flex items-center"><span class="mr-2">💡</span> Você pode espiar cada sessão</h3>
+        <p class="text-neutral-300">Cada subagente roda numa sessão visível. Dá para abrir a do "COO" e ler o briefing exato que o maestro escreveu para ela. Isso desmistifica o subagente: não é mágica, é um chat focado que alguém abriu para uma tarefa.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-emerald-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">vários subagentes em paralelo, cada um com uma perspectiva diferente sobre o mesmo material.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">mostra o paralelismo na prática e revela que cada subagente recebe um briefing próprio do maestro.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">paralelismo · perspectivas diversas · briefing por subagente · sessões inspecionáveis.</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 4 — O que o subagente NÃO é (grid ✓/✗) -->
+    <section id="topico-4" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">4</span>
+        <h2 class="text-2xl font-bold">🚫 O que o subagente NÃO é</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Aqui mora a confusão mais comum. O subagente <strong class="text-emerald-400">não é o chat principal</strong> e você
+        <strong class="text-emerald-400">não conversa diretamente com ele</strong>. Ele não responde a você — ele responde
+        <strong class="text-emerald-400">ao maestro</strong>. Pensar nele como "outro chat onde eu digito" é o erro que faz tudo
+        parecer quebrado.
+      </p>
+
+      <!-- GRID ✓/✗ #1 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-emerald-900/20 rounded-xl border border-emerald-500/30 p-6">
+          <h4 class="font-bold text-emerald-400 mb-4">✓ O que o subagente É</h4>
+          <ul class="space-y-3 text-neutral-300">
+            <li class="flex items-start space-x-2"><span class="text-emerald-400">✓</span><span>Um trabalhador focado, acionado pelo maestro</span></li>
+            <li class="flex items-start space-x-2"><span class="text-emerald-400">✓</span><span>Dono de uma janela de contexto separada</span></li>
+            <li class="flex items-start space-x-2"><span class="text-emerald-400">✓</span><span>Quem devolve um relatório e some</span></li>
+            <li class="flex items-start space-x-2"><span class="text-emerald-400">✓</span><span>Subordinado ao maestro, não a você</span></li>
+          </ul>
+        </div>
+        <div class="bg-red-900/20 rounded-xl border border-red-500/30 p-6">
+          <h4 class="font-bold text-red-400 mb-4">✗ O que o subagente NÃO é</h4>
+          <ul class="space-y-3 text-neutral-300">
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Não é o seu chat principal</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Não é alguém com quem você digita direto</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Não guarda a memória da sua conversa</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Não responde a você — responde ao maestro</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-red-900/20 rounded-xl border border-red-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-red-400 mb-3 flex items-center"><span class="mr-2">⚠️</span> O erro que trava iniciantes</h3>
+        <p class="text-neutral-300">Tentar "responder" um subagente como se fosse uma janela de chat. Ele não está esperando o seu input — ele já recebeu o briefing do maestro e está executando. Se você quer mudar algo, você fala com o <strong>maestro</strong>, e o maestro ajusta ou dispara um novo subagente.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-emerald-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">a fronteira do conceito — o que o subagente deliberadamente não faz.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">elimina a expectativa errada de "conversar" com ele e mostra a quem ele de fato responde.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">não é o chat · sem diálogo direto · sem memória da sua sessão · responde ao maestro.</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 5 — Relação 1-para-1 (grid ✓/✗ #2) -->
+    <section id="topico-5" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">5</span>
+        <h2 class="text-2xl font-bold">🔗 Relação 1-para-1 com o maestro</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Cada subagente fala <strong class="text-emerald-400">só com o maestro</strong>. Os subagentes
+        <strong class="text-emerald-400">não conversam entre si</strong>. É um modelo de estrela: o maestro no centro, cada
+        especialista ligado a ele por um fio direto, e nenhum fio entre os especialistas. Isso mantém tudo previsível — sem
+        "telefone sem fio" entre trabalhadores.
+      </p>
+
+      <!-- SVG malha x solo (estrela) -->
+      <div class="rounded-2xl border border-emerald-500/30 bg-dark-900/40 p-3 sm:p-4 mb-6 overflow-hidden">
+        <svg viewBox="0 0 1000 260" class="w-full h-auto" role="img" aria-label="À esquerda, o modelo correto: maestro no centro ligado a cada subagente, sem ligações entre eles. À direita, o modelo proibido: subagentes conversando diretamente entre si">
+          <defs>
+            <filter id="m11b-glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <!-- divisória -->
+          <line x1="500" y1="20" x2="500" y2="240" stroke="#4b5563" stroke-width="1.5" stroke-dasharray="7 7" opacity="0.6"/>
+          <text x="250" y="34" text-anchor="middle" fill="#34d399" font-family="Inter,sans-serif" font-weight="600" font-size="15">Estrela (correto)</text>
+          <text x="750" y="34" text-anchor="middle" fill="#f87171" font-family="Inter,sans-serif" font-weight="600" font-size="15">Malha (não acontece)</text>
+          <!-- ESQUERDA: estrela -->
+          <g fill="none" stroke="#38bdf8" stroke-width="1.8" opacity="0.55">
+            <path d="M250,140 L130,90"/><path d="M250,140 L370,90"/><path d="M250,140 L130,200"/><path d="M250,140 L370,200"/>
+          </g>
+          <g font-family="Inter,sans-serif" font-size="12" font-weight="600">
+            <g class="wf-a"><circle cx="130" cy="90"  r="26" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="130" y="94"  text-anchor="middle" fill="#bfe6ff">sub</text></g>
+            <g class="wf-a"><circle cx="370" cy="90"  r="26" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="370" y="94"  text-anchor="middle" fill="#bfe6ff">sub</text></g>
+            <g class="wf-a"><circle cx="130" cy="200" r="26" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="130" y="204" text-anchor="middle" fill="#bfe6ff">sub</text></g>
+            <g class="wf-a"><circle cx="370" cy="200" r="26" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="370" y="204" text-anchor="middle" fill="#bfe6ff">sub</text></g>
+          </g>
+          <g filter="url(#m11b-glow)"><circle cx="250" cy="140" r="34" fill="#0e2018" stroke="#34d399" stroke-width="2.4"/></g>
+          <text x="250" y="145" text-anchor="middle" fill="#34d399" font-family="Inter,sans-serif" font-weight="600" font-size="13">maestro</text>
+          <!-- DIREITA: malha proibida -->
+          <g fill="none" stroke="#f87171" stroke-width="1.8" opacity="0.5" stroke-dasharray="5 5">
+            <path d="M630,90 L870,90"/><path d="M630,200 L870,200"/><path d="M630,90 L630,200"/><path d="M870,90 L870,200"/>
+            <path d="M630,90 L870,200"/><path d="M870,90 L630,200"/>
+          </g>
+          <g font-family="Inter,sans-serif" font-size="12" font-weight="600">
+            <circle cx="630" cy="90"  r="26" fill="#2a0f16" stroke="#f87171" stroke-width="2"/><text x="630" y="94"  text-anchor="middle" fill="#fecaca">sub</text>
+            <circle cx="870" cy="90"  r="26" fill="#2a0f16" stroke="#f87171" stroke-width="2"/><text x="870" y="94"  text-anchor="middle" fill="#fecaca">sub</text>
+            <circle cx="630" cy="200" r="26" fill="#2a0f16" stroke="#f87171" stroke-width="2"/><text x="630" y="204" text-anchor="middle" fill="#fecaca">sub</text>
+            <circle cx="870" cy="200" r="26" fill="#2a0f16" stroke="#f87171" stroke-width="2"/><text x="870" y="204" text-anchor="middle" fill="#fecaca">sub</text>
+          </g>
+          <text x="750" y="235" text-anchor="middle" fill="#f87171" font-family="Inter,sans-serif" font-size="11">subagentes não falam entre si</text>
+        </svg>
+      </div>
+
+      <!-- GRID ✓/✗ #2 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-emerald-900/20 rounded-xl border border-emerald-500/30 p-6">
+          <h4 class="font-bold text-emerald-400 mb-4">✓ Como o fluxo acontece</h4>
+          <ul class="space-y-3 text-neutral-300">
+            <li class="flex items-start space-x-2"><span class="text-emerald-400">✓</span><span>Subagente → maestro (relatório)</span></li>
+            <li class="flex items-start space-x-2"><span class="text-emerald-400">✓</span><span>Maestro → subagente (briefing)</span></li>
+            <li class="flex items-start space-x-2"><span class="text-emerald-400">✓</span><span>O maestro junta os relatórios de todos</span></li>
+          </ul>
+        </div>
+        <div class="bg-red-900/20 rounded-xl border border-red-500/30 p-6">
+          <h4 class="font-bold text-red-400 mb-4">✗ O que não rola</h4>
+          <ul class="space-y-3 text-neutral-300">
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Subagente A → subagente B</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Dois subagentes "negociando" uma resposta</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Um subagente lendo a janela do outro</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-emerald-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">topologia em estrela — todo subagente conectado só ao maestro, nunca entre si.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">explica por que o sistema é previsível e por que "subagentes que precisariam conversar" são um sinal de evitar subagente.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">relação 1-para-1 · sem comunicação lateral · maestro como hub.</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 6 — Primeiro contato (code box) -->
+    <section id="topico-6" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">6</span>
+        <h2 class="text-2xl font-bold">🚀 Primeiro contato — invoque um built-in</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Você não precisa criar nada para começar. O Claude Code já vem com subagentes <strong class="text-emerald-400">built-in</strong>
+        (como o <code class="text-emerald-400">general-purpose</code>, que pesquisa e lê arquivos). Para acionar um, basta
+        <strong class="text-emerald-400">linguagem natural</strong>: você descreve o serviço e o maestro decide delegar. Sem comando
+        especial, sem sintaxe difícil.
+      </p>
+
+      <!-- CODE BOX #1 (invocação por linguagem natural) -->
+      <div class="bg-dark-800 rounded-xl border border-dark-600 p-6 mb-6">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs uppercase tracking-wide text-neutral-500">no seu chat</span>
+          <span class="text-xs text-emerald-400">linguagem natural</span>
+        </div>
+        <pre class="font-mono text-sm text-neutral-300 overflow-x-auto leading-relaxed"><code><span class="text-emerald-400">você &gt;</span> Pesquise a ferramenta "ripgrep" e me traga só
+        um resumo de 5 bullets, sem encher meu contexto.
+
+<span class="text-neutral-500"># o maestro decide delegar a um subagente built-in,</span>
+<span class="text-neutral-500"># que abre a janela dele, faz a pesquisa pesada,</span>
+<span class="text-neutral-500"># e devolve ao maestro só os 5 bullets pedidos.</span>
+
+<span class="text-emerald-400">maestro &gt;</span> Pronto — 5 pontos sobre o ripgrep:
+        1) busca recursiva ultrarrápida em texto …</code></pre>
+      </div>
+
+      <div class="bg-primary/10 rounded-xl border border-primary/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-primary mb-3 flex items-center"><span class="mr-2">💡</span> A frase que aciona</h3>
+        <p class="text-neutral-300">Duas pistas fazem o maestro delegar: <strong>"me traga só um resumo"</strong> (a saída é pequena) e <strong>"sem encher meu contexto"</strong> (a leitura é grande e descartável). Esse é exatamente o caso de ouro para um subagente — e o tema da "pergunta que decide", lá no módulo 1.5.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-emerald-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">acionar um subagente já existente apenas descrevendo a tarefa em português.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">tira o medo do conceito: dá para usar subagentes hoje, sem configurar nada.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">built-in · invocação por linguagem natural · general-purpose · delegação automática.</span></div>
+      </div>
+    </section>
+
+    <!-- BLOCO: EXEMPLO REAL (.md comentado) -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">📄</span>
+        <h2 class="text-2xl font-bold">Exemplo real: um subagente em arquivo</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Um subagente custom é só um arquivo <code class="text-emerald-400">.md</code>: um cabeçalho de configuração
+        (<strong class="text-emerald-400">frontmatter</strong>) e um corpo com as instruções. Você vai dissecar cada campo nas trilhas
+        seguintes — por ora, leia este <code class="text-emerald-400">code-reviewer.md</code> mínimo só para ver a cara da coisa.
+      </p>
+
+      <div class="bg-dark-800 rounded-xl border border-dark-600 p-6 mb-6">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs uppercase tracking-wide text-neutral-500">.claude/agents/code-reviewer.md</span>
+          <span class="text-xs text-blue-400">Markdown + YAML</span>
+        </div>
+        <pre class="font-mono text-sm text-neutral-300 overflow-x-auto leading-relaxed"><code><span class="text-neutral-500">--- # frontmatter: a CONFIGURAÇÃO do subagente</span>
+<span class="text-blue-400">name</span>: code-reviewer            <span class="text-neutral-500"># minúsculas e hífens</span>
+<span class="text-blue-400">description</span>: Revisa o diff atual em busca de bugs,
+  falhas de segurança e testes faltando. Use após
+  qualquer mudança de código.   <span class="text-neutral-500"># isto é o GATILHO</span>
+<span class="text-blue-400">tools</span>: Read, Grep, Glob       <span class="text-neutral-500"># só leitura: não edita nada</span>
+<span class="text-blue-400">model</span>: sonnet                 <span class="text-neutral-500"># bom o bastante para revisar</span>
+<span class="text-neutral-500">---</span>
+
+<span class="text-neutral-500"># corpo: o CÉREBRO do subagente</span>
+You are a senior code reviewer.
+
+<span class="text-emerald-400">When invoked:</span>
+1. Run <span class="text-emerald-400">git diff</span> to see what changed.
+2. Read the changed files and understand the intent.
+3. Review for correctness, security and missing tests.
+
+<span class="text-emerald-400">Flag:</span> bugs, security holes, and missing tests.
+Be concise. Do <span class="text-emerald-400">not</span> rewrite the code — only report.</code></pre>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <h4 class="font-semibold text-emerald-400 mb-3">⚙️ O frontmatter (config)</h4>
+          <ul class="space-y-2 text-neutral-300 text-sm">
+            <li><strong class="text-emerald-400">name</strong> — como o maestro chama o agente.</li>
+            <li><strong class="text-emerald-400">description</strong> — o gatilho: faz o maestro saber quando usar.</li>
+            <li><strong class="text-emerald-400">tools</strong> — o que ele pode fazer (aqui, só ler).</li>
+            <li><strong class="text-emerald-400">model</strong> — qual modelo roda a tarefa.</li>
+          </ul>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <h4 class="font-semibold text-emerald-400 mb-3">🧠 O corpo (cérebro)</h4>
+          <ul class="space-y-2 text-neutral-300 text-sm">
+            <li><strong class="text-emerald-400">Papel</strong> — "you are a senior code reviewer".</li>
+            <li><strong class="text-emerald-400">Passos</strong> — o que fazer, numerado.</li>
+            <li><strong class="text-emerald-400">Saída</strong> — o que reportar.</li>
+            <li><strong class="text-emerald-400">Limites</strong> — o que NÃO fazer (não reescrever).</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOCO: PROMPTS PRONTOS -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">⌨️</span>
+        <h2 class="text-2xl font-bold">Prompts prontos (copie e cole)</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Dois prompts para você acionar um subagente built-in agora mesmo, sem configurar nada. Repare no padrão: pedir
+        <strong class="text-emerald-400">o resumo</strong> e proteger <strong class="text-emerald-400">o contexto</strong>.
+      </p>
+
+      <div class="space-y-4">
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-emerald-400">Prompt 1 — pesquisar e resumir</span>
+            <span class="text-xs text-neutral-500">delega pesquisa pesada</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>Abra um subagente pra pesquisar a ferramenta X e me
+traga só um resumo de 5 bullets. Não cole o conteúdo
+bruto aqui — só a conclusão.</code></pre>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-emerald-400">Prompt 2 — ler arquivos sem poluir</span>
+            <span class="text-xs text-neutral-500">protege o contexto</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>Use o general-purpose pra ler estes arquivos e me
+resumir o que importa, sem encher meu contexto.
+Devolva no máximo 1 parágrafo + os caminhos relevantes.</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOCO: TELA SIMULADA (monitor-mock, 5 subagentes + status line) -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">🖥️</span>
+        <h2 class="text-2xl font-bold">Tela simulada: 5 subagentes em paralelo</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        É assim que a demo das 5 personas aparece no terminal: o maestro disparou cinco subagentes e você os vê rodando lado a lado,
+        cada um com seu modelo e seu progresso. Embaixo, a <strong class="text-emerald-400">status line</strong> mostra quanto do
+        <em>seu</em> contexto está em uso — e ele quase não mexe, porque o trabalho pesado está nas janelas deles.
+      </p>
+
+      <div class="rounded-xl border border-dark-600 bg-dark-900 overflow-hidden mb-2">
+        <!-- barra de título -->
+        <div class="flex items-center justify-between px-4 py-2 bg-dark-700/60 border-b border-dark-600">
+          <div class="flex items-center space-x-2"><span class="w-3 h-3 rounded-full bg-red-400/70"></span><span class="w-3 h-3 rounded-full bg-amber-400/70"></span><span class="w-3 h-3 rounded-full bg-emerald-400/70"></span></div>
+          <span class="text-xs text-neutral-400 font-mono">claude code · revisar-livro · 5 subagentes</span>
+          <span class="text-xs text-emerald-400 font-mono">⏱ 00:48</span>
+        </div>
+        <!-- subagentes -->
+        <div class="p-4 space-y-3 font-mono text-xs">
+          <div class="flex items-center gap-3"><span class="text-emerald-400 w-40 shrink-0">● iniciante (Linda)</span><span class="text-neutral-500 w-14 shrink-0">Haiku</span><div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill h-full bg-emerald-500/70" style="width:72%"></div></div><span class="text-neutral-400 w-20 text-right shrink-0">96k tok</span></div>
+          <div class="flex items-center gap-3"><span class="text-emerald-400 w-40 shrink-0">● engenheiro</span><span class="text-neutral-500 w-14 shrink-0">Sonnet</span><div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b2 h-full bg-emerald-500/70" style="width:54%"></div></div><span class="text-neutral-400 w-20 text-right shrink-0">142k tok</span></div>
+          <div class="flex items-center gap-3"><span class="text-emerald-400 w-40 shrink-0">● dono de negócio</span><span class="text-neutral-500 w-14 shrink-0">Haiku</span><div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b3 h-full bg-emerald-500/70" style="width:88%"></div></div><span class="text-neutral-400 w-20 text-right shrink-0">73k tok</span></div>
+          <div class="flex items-center gap-3"><span class="text-emerald-400 w-40 shrink-0">● COO (David)</span><span class="text-neutral-500 w-14 shrink-0">Sonnet</span><div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b4 h-full bg-emerald-500/70" style="width:41%"></div></div><span class="text-neutral-400 w-20 text-right shrink-0">118k tok</span></div>
+          <div class="flex items-center gap-3"><span class="text-emerald-400 w-40 shrink-0">● editor</span><span class="text-neutral-500 w-14 shrink-0">Haiku</span><div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b5 h-full bg-emerald-500/70" style="width:63%"></div></div><span class="text-neutral-400 w-20 text-right shrink-0">81k tok</span></div>
+          <div class="text-neutral-500 pt-1">5 subagentes ativos · síntese final aguardando os 5 relatórios</div>
+        </div>
+        <!-- status line -->
+        <div class="flex items-center justify-between px-4 py-2 bg-dark-800 border-t border-dark-600 font-mono text-xs">
+          <span class="text-neutral-400">maestro · Opus</span>
+          <div class="flex items-center gap-2">
+            <span class="text-neutral-500">seu contexto</span>
+            <div class="w-28 h-2 rounded bg-dark-700 overflow-hidden"><div class="h-full bg-emerald-500/70" style="width:12%"></div></div>
+            <span class="text-emerald-400">12%</span>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-neutral-500">↑ Recriação ilustrativa do terminal (não é screenshot real). Note os 5 subagentes a todo vapor enquanto o seu contexto mal sai do lugar.</p>
+    </section>
+
+    <!-- BLOCO: EXERCÍCIO -->
+    <section class="mb-12">
+      <div class="bg-gradient-to-br from-emerald-900/30 to-dark-800 rounded-xl border border-emerald-500/30 p-8">
+        <div class="flex items-center space-x-4 mb-6">
+          <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">🎯</span>
+          <h2 class="text-2xl font-bold">Exercício</h2>
+        </div>
+        <p class="text-neutral-300 mb-6 leading-relaxed">
+          Liste <strong class="text-emerald-400">3 tarefas do seu dia</strong> que dariam bons subagentes. Para cada uma, justifique
+          com a pergunta que decide: <em>"isso vai despejar coisa que eu nunca vou reler?"</em>
+        </p>
+
+        <div class="bg-dark-800/60 rounded-lg p-5 mb-6">
+          <h4 class="font-semibold text-emerald-400 mb-3">Como fazer</h4>
+          <ol class="space-y-2 text-neutral-300 text-sm list-decimal list-inside">
+            <li>Pense em coisas que você faz no computador e que <strong>leem muito</strong>, <strong>geram muita saída</strong>, ou <strong>se repetem</strong>.</li>
+            <li>Escreva a tarefa em uma linha (ex.: "vasculhar 30 PDFs atrás de uma cláusula").</li>
+            <li>Responda, para cada uma, à pergunta que decide — e diga qual critério ela atende.</li>
+          </ol>
+        </div>
+
+        <div class="bg-blue-900/20 rounded-xl border border-blue-500/30 p-6 mb-6">
+          <h4 class="font-semibold text-blue-400 mb-3">✅ Critério de verificação — como saber que acertou</h4>
+          <p class="text-neutral-300 text-sm mb-3">Cada tarefa que você listou deve atender a <strong>pelo menos um</strong> destes três sinais:</p>
+          <ul class="space-y-2 text-neutral-300 text-sm">
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">→</span><span><strong>Lê muitos arquivos</strong> (a leitura bruta não precisa ficar no seu contexto).</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">→</span><span><strong>Gera muita saída</strong> que você nunca vai reler por inteiro (só quer a conclusão).</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">→</span><span><strong>É repetível ou paralela</strong> (dá para rodar várias vezes, ou várias de uma vez).</span></li>
+          </ul>
+          <p class="text-neutral-300 text-sm mt-3">Se uma tarefa é uma <strong>edição rápida</strong> ou exige <strong>a conversa inteira</strong>, ela <em>não</em> é candidata — e perceber isso também conta como acerto.</p>
+        </div>
+
+        <div class="bg-dark-800/60 rounded-lg p-5">
+          <h4 class="font-semibold text-emerald-400 mb-3">Exemplo resolvido</h4>
+          <p class="text-neutral-300 text-sm"><strong>Tarefa:</strong> "ler 30 PDFs de contrato e achar onde aparece a cláusula de rescisão". <strong class="text-emerald-400">Bom subagente?</strong> Sim — lê muitos arquivos e gera muita saída que eu não vou reler; quero só o "achei na página X de cada contrato". Atende 2 dos 3 sinais.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESUMO / NAVEGAÇÃO -->
+    <section class="mb-12">
+      <div class="bg-gradient-to-br from-emerald-900/40 via-dark-800 to-dark-800 rounded-xl border border-emerald-500/30 p-8">
+        <h2 class="text-2xl font-bold mb-6 flex items-center"><span class="mr-3">✅</span> Resumo do módulo</h2>
+
+        <div class="space-y-4 mb-8">
+          <div class="flex items-start space-x-3"><span class="text-emerald-400 mt-1">✓</span><div><strong class="text-white">Maestro × especialista</strong><span class="text-neutral-400"> — o chat principal coordena (empreiteiro geral); o subagente executa uma tarefa.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-emerald-400 mt-1">✓</span><div><strong class="text-white">O ciclo</strong><span class="text-neutral-400"> — tarefa → janela própria do subagente → relatório limpo que o maestro repassa a você.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-emerald-400 mt-1">✓</span><div><strong class="text-white">5 personas</strong><span class="text-neutral-400"> — vários subagentes em paralelo, cada um com uma lente e um briefing próprio.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-emerald-400 mt-1">✓</span><div><strong class="text-white">O que ele NÃO é</strong><span class="text-neutral-400"> — não é o chat, você não digita pra ele; ele responde ao maestro.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-emerald-400 mt-1">✓</span><div><strong class="text-white">Relação 1-para-1</strong><span class="text-neutral-400"> — estrela: cada subagente só fala com o maestro; eles não conversam entre si.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-emerald-400 mt-1">✓</span><div><strong class="text-white">Primeiro contato</strong><span class="text-neutral-400"> — invoque um built-in com linguagem natural: "pesquise X e me traga só o resumo".</span></div></div>
+        </div>
+
+        <div class="bg-dark-800/50 rounded-lg p-4 mb-8">
+          <h3 class="font-semibold text-emerald-400 mb-2">Próximo módulo:</h3>
+          <p class="text-neutral-300">1.2 — O verdadeiro motivo: contexto limpo. Por que proteger contexto é o motivo nº 1 dos subagentes.</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="index.html" class="flex-1 text-center px-6 py-3 bg-dark-700 text-neutral-300 rounded-lg font-semibold hover:bg-dark-600 transition-colors">← Voltar ao índice da trilha</a>
+          <a href="modulo-1-2.html" class="flex-1 text-center px-6 py-3 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-500 transition-colors">Próximo módulo →</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-dark-600 py-8 mt-16">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-neutral-500 text-sm">
+      <p class="mb-2">Subagentes — 2026 · um curso no formato
+        <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 font-medium">INEMA.CLUB</a>
+      </p>
+      <p>Trilha 1 · Fundamentos · Módulo 1.1</p>
+    </div>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script>
+    // Toggle de tópicos (compatível com o padrão; expansíveis ficam abertos por padrão nesta página de módulo)
+    function toggleTopic(button) {
+      const topicItem = button.closest('.topic-item');
+      if (!topicItem) return;
+      const explanation = topicItem.querySelector('.topic-explanation');
+      const moduleCard = button.closest('.bg-dark-800');
+      if (moduleCard) {
+        moduleCard.querySelectorAll('.topic-explanation.active').forEach(exp => {
+          if (exp !== explanation) exp.classList.remove('active');
+        });
+      }
+      if (explanation) explanation.classList.toggle('active');
+    }
+
+    // Theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+    const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+    const html = document.documentElement;
+
+    if (localStorage.getItem('theme') === 'light' || (!localStorage.getItem('theme') && !html.classList.contains('dark'))) {
+      themeToggleDarkIcon.classList.remove('hidden');
+      html.classList.remove('dark');
+    } else {
+      themeToggleLightIcon.classList.remove('hidden');
+    }
+
+    themeToggle.addEventListener('click', () => {
+      themeToggleDarkIcon.classList.toggle('hidden');
+      themeToggleLightIcon.classList.toggle('hidden');
+      html.classList.toggle('dark');
+      localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+    });
+  </script>
+
+</body>
+</html>

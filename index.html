@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subagentes | Domine os especialistas do Claude Code</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#FACC15',
+            dark: { 900: '#111827', 800: '#1f2937', 700: '#374151', 600: '#4b5563' }
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .dark body { background-color: #111827; }
+    .topic-explanation { display: none; }
+    .topic-explanation.active { display: block; }
+
+    /* SVG futurista: pulso contido */
+    @keyframes wf-pulse { 0%,100% { opacity:.55 } 50% { opacity:1 } }
+    @media (prefers-reduced-motion: no-preference) {
+      .wf-a { animation: wf-pulse 2.6s ease-in-out infinite; }
+      .wf-a:nth-child(2){animation-delay:.25s} .wf-a:nth-child(3){animation-delay:.5s}
+      .wf-a:nth-child(4){animation-delay:.75s} .wf-a:nth-child(5){animation-delay:1s}
+    }
+
+    /* ===== Light mode overrides - OBRIGATORIO ===== */
+    /* Parte 1 - Base */
+    html:not(.dark) body { background-color: #f8fafc; }
+    html:not(.dark) .bg-dark-900 { background-color: #ffffff; }
+    html:not(.dark) .bg-dark-800 { background-color: #f9fafb; }
+    html:not(.dark) .bg-dark-700 { background-color: #f3f4f6; }
+    html:not(.dark) .bg-dark-600 { background-color: #e5e7eb; }
+    html:not(.dark) .text-neutral-100 { color: #111827; }
+    html:not(.dark) .text-neutral-300 { color: #4b5563; }
+    html:not(.dark) .text-neutral-400 { color: #6b7280; }
+    html:not(.dark) .text-neutral-500 { color: #9ca3af; }
+    html:not(.dark) .border-dark-600 { border-color: #d1d5db; }
+    html:not(.dark) .border-dark-700 { border-color: #e5e7eb; }
+
+    /* Parte 2 - Cores de acento de TODAS as trilhas (landing) */
+    /* Emerald (T1) */
+    html:not(.dark) .text-emerald-400 { color: #059669; }
+    html:not(.dark) .bg-emerald-500\/20 { background-color: rgba(5, 150, 105, 0.12); }
+    html:not(.dark) .bg-emerald-500\/10 { background-color: rgba(5, 150, 105, 0.08); }
+    html:not(.dark) .border-emerald-500\/30 { border-color: rgba(5, 150, 105, 0.25); }
+    html:not(.dark) .hover\:bg-emerald-500\/30:hover { background-color: rgba(5, 150, 105, 0.18); }
+    html:not(.dark) .hover\:bg-emerald-500\/10:hover { background-color: rgba(5, 150, 105, 0.08); }
+    html:not(.dark) .hover\:border-emerald-500\/30:hover { border-color: rgba(5, 150, 105, 0.25); }
+    html:not(.dark) .hover\:text-emerald-400:hover { color: #059669; }
+    html:not(.dark) .group:hover .group-hover\:text-emerald-400 { color: #059669; }
+    /* Blue (T2) */
+    html:not(.dark) .text-blue-400 { color: #2563eb; }
+    html:not(.dark) .bg-blue-500\/20 { background-color: rgba(37, 99, 235, 0.12); }
+    html:not(.dark) .bg-blue-500\/10 { background-color: rgba(37, 99, 235, 0.08); }
+    html:not(.dark) .border-blue-500\/30 { border-color: rgba(37, 99, 235, 0.25); }
+    html:not(.dark) .hover\:bg-blue-500\/10:hover { background-color: rgba(37, 99, 235, 0.08); }
+    html:not(.dark) .hover\:border-blue-500\/30:hover { border-color: rgba(37, 99, 235, 0.25); }
+    html:not(.dark) .hover\:text-blue-400:hover { color: #2563eb; }
+    html:not(.dark) .group:hover .group-hover\:text-blue-400 { color: #2563eb; }
+    /* Amber (T3) */
+    html:not(.dark) .text-amber-400 { color: #92400e; }
+    html:not(.dark) .bg-amber-500\/20 { background-color: rgba(217, 119, 6, 0.12); }
+    html:not(.dark) .bg-amber-500\/10 { background-color: rgba(217, 119, 6, 0.08); }
+    html:not(.dark) .border-amber-500\/30 { border-color: rgba(217, 119, 6, 0.25); }
+    html:not(.dark) .hover\:bg-amber-500\/10:hover { background-color: rgba(217, 119, 6, 0.08); }
+    html:not(.dark) .hover\:border-amber-500\/30:hover { border-color: rgba(217, 119, 6, 0.25); }
+    html:not(.dark) .hover\:text-amber-400:hover { color: #92400e; }
+    html:not(.dark) .group:hover .group-hover\:text-amber-400 { color: #92400e; }
+    /* Purple (T4) */
+    html:not(.dark) .text-purple-400 { color: #7c3aed; }
+    html:not(.dark) .bg-purple-500\/20 { background-color: rgba(124, 58, 237, 0.12); }
+    html:not(.dark) .bg-purple-500\/10 { background-color: rgba(124, 58, 237, 0.08); }
+    html:not(.dark) .border-purple-500\/30 { border-color: rgba(124, 58, 237, 0.25); }
+    html:not(.dark) .hover\:bg-purple-500\/10:hover { background-color: rgba(124, 58, 237, 0.08); }
+    html:not(.dark) .hover\:border-purple-500\/30:hover { border-color: rgba(124, 58, 237, 0.25); }
+    html:not(.dark) .hover\:text-purple-400:hover { color: #7c3aed; }
+    html:not(.dark) .group:hover .group-hover\:text-purple-400 { color: #7c3aed; }
+
+    /* Parte 3 - Remove gradientes e cores especiais */
+    html:not(.dark) [class*="bg-gradient-to"] { background-image: none !important; }
+    html:not(.dark) .text-primary { color: #a16207; }
+    html:not(.dark) .bg-primary\/10 { background-color: rgba(161, 98, 7, 0.08); }
+    html:not(.dark) .border-primary\/30 { border-color: rgba(161, 98, 7, 0.25); }
+    html:not(.dark) .border-primary\/40 { border-color: rgba(161, 98, 7, 0.25); }
+    html:not(.dark) .text-sky-400 { color: #0369a1; }
+    html:not(.dark) .text-yellow-400 { color: #a16207; }
+    html:not(.dark) .hover\:text-sky-300:hover { color: #0284c7; }
+    html:not(.dark) .hover\:text-yellow-300:hover { color: #854d0e; }
+
+    /* Parte 4 - Navbar */
+    html:not(.dark) .bg-dark-900\/95 { background-color: rgba(255, 255, 255, 0.95); }
+
+    /* Parte 5 - Bordas suavizadas no DARK mode (OBRIGATORIO) */
+    .dark .border-dark-600 { border-color: #374151; }
+    .dark .divide-dark-600 > :not([hidden]) ~ :not([hidden]) { border-color: #374151; }
+
+    /* SVG: suavizar no tema claro */
+    html:not(.dark) svg[role="img"] { filter: saturate(0.82) brightness(0.96); }
+  </style>
+</head>
+<body class="bg-dark-900 text-neutral-100 min-h-screen">
+
+  <!-- NAVIGATION -->
+  <nav class="sticky top-0 z-50 bg-dark-900/95 backdrop-blur-sm border-b border-dark-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-14">
+        <!-- Logo + INEMA.CLUB -->
+        <div class="flex items-center space-x-4">
+          <a href="index.html" class="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300">
+            <span class="text-2xl">🤖</span>
+            <span class="font-bold text-lg hidden sm:inline">Subagentes</span>
+          </a>
+          <span class="text-neutral-600">|</span>
+          <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 text-sm font-medium">INEMA.CLUB</a>
+        </div>
+
+        <!-- Trilhas + Theme Toggle -->
+        <div class="flex items-center space-x-1 sm:space-x-2">
+          <a href="curso/trilha1/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
+            <span class="sm:hidden">T1</span>
+            <span class="hidden sm:inline">Fundamentos</span>
+          </a>
+          <a href="curso/trilha2/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
+            <span class="sm:hidden">T2</span>
+            <span class="hidden sm:inline">Na prática</span>
+          </a>
+          <a href="curso/trilha3/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+            <span class="sm:hidden">T3</span>
+            <span class="hidden sm:inline">Orquestração</span>
+          </a>
+          <a href="curso/trilha4/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-purple-400 hover:bg-purple-500/10 transition-colors">
+            <span class="sm:hidden">T4</span>
+            <span class="hidden sm:inline">Avançado</span>
+          </a>
+
+          <!-- Theme Toggle -->
+          <button id="theme-toggle" class="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 transition-colors ml-2">
+            <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+            </svg>
+            <svg id="theme-toggle-light-icon" class="hidden w-5 h-5 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="bg-gradient-to-br from-amber-900/20 via-dark-900 to-dark-900 border-b border-dark-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+      <span class="inline-block px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full mb-5 border border-primary/30">
+        CURSO INEMA.CLUB · 4 TRILHAS · 24 MÓDULOS
+      </span>
+      <h1 class="text-4xl sm:text-6xl font-bold mb-5 tracking-tight">Subagentes</h1>
+      <p class="text-lg sm:text-xl text-neutral-300 max-w-3xl mb-10 leading-relaxed">
+        Domine os especialistas do Claude Code — do primeiro <span class="font-mono text-amber-400">.md</span> à frota multiagente.
+        Aprenda <strong class="text-neutral-100">quando delegar</strong>, como criar agentes que disparam sozinhos,
+        e a orquestrar um time inteiro escolhendo o <strong class="text-neutral-100">modelo certo por tarefa</strong>.
+      </p>
+
+      <!-- HERO SVG: fan-out maestro -> subagentes -> resumo -->
+      <div class="rounded-2xl border border-amber-500/30 bg-dark-900/40 p-3 sm:p-5 mb-8 overflow-hidden">
+        <svg viewBox="0 0 1000 240" class="w-full h-auto" role="img" aria-label="Um maestro dispara vários subagentes em paralelo que convergem num único resumo limpo">
+          <defs>
+            <linearGradient id="lp-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#fbbf24"/><stop offset="1" stop-color="#f59e0b"/>
+            </linearGradient>
+            <filter id="lp-glow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <pattern id="lp-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+              <circle cx="1.3" cy="1.3" r="1.3" fill="#f59e0b" opacity="0.12"/>
+            </pattern>
+            <marker id="lp-ah" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 L2.4,4.5 Z" fill="#fbbf24"/></marker>
+            <marker id="lp-ahc" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 L2.4,4.5 Z" fill="#38bdf8"/></marker>
+          </defs>
+          <rect x="0" y="0" width="1000" height="240" fill="url(#lp-grid)"/>
+          <g fill="none" stroke="#fbbf24" stroke-width="1.8" opacity="0.5">
+            <path d="M196,120 C300,120 320,38 452,38" marker-end="url(#lp-ah)"/>
+            <path d="M196,120 C300,120 320,79 452,79" marker-end="url(#lp-ah)"/>
+            <path d="M196,120 L452,120" marker-end="url(#lp-ah)"/>
+            <path d="M196,120 C300,120 320,161 452,161" marker-end="url(#lp-ah)"/>
+            <path d="M196,120 C300,120 320,202 452,202" marker-end="url(#lp-ah)"/>
+          </g>
+          <g fill="none" stroke="#38bdf8" stroke-width="1.8" opacity="0.5">
+            <path d="M588,38  C700,38 720,120 800,120" marker-end="url(#lp-ahc)"/>
+            <path d="M588,79  C700,79 720,120 800,120" marker-end="url(#lp-ahc)"/>
+            <path d="M588,120 L800,120" marker-end="url(#lp-ahc)"/>
+            <path d="M588,161 C700,161 720,120 800,120" marker-end="url(#lp-ahc)"/>
+            <path d="M588,202 C700,202 720,120 800,120" marker-end="url(#lp-ahc)"/>
+          </g>
+          <g filter="url(#lp-glow)"><rect x="40" y="88" width="156" height="64" rx="14" fill="#1f1604" stroke="url(#lp-grad)" stroke-width="2.5"/></g>
+          <text x="118" y="114" text-anchor="middle" fill="#fbbf24" font-family="Inter,sans-serif" font-weight="700" font-size="20">Maestro</text>
+          <text x="118" y="134" text-anchor="middle" fill="#fcd9a0" font-family="Inter,sans-serif" font-size="12.5">o seu chat</text>
+          <g font-family="Inter,sans-serif" font-size="13" font-weight="600">
+            <g class="wf-a"><rect x="452" y="22"  width="136" height="32" rx="9" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="520" y="43"  text-anchor="middle" fill="#bfe6ff">subagente</text></g>
+            <g class="wf-a"><rect x="452" y="63"  width="136" height="32" rx="9" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="520" y="84"  text-anchor="middle" fill="#bfe6ff">subagente</text></g>
+            <g class="wf-a"><rect x="452" y="104" width="136" height="32" rx="9" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="520" y="125" text-anchor="middle" fill="#bfe6ff">subagente</text></g>
+            <g class="wf-a"><rect x="452" y="145" width="136" height="32" rx="9" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="520" y="166" text-anchor="middle" fill="#bfe6ff">subagente</text></g>
+            <g class="wf-a"><rect x="452" y="186" width="136" height="32" rx="9" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="520" y="207" text-anchor="middle" fill="#bfe6ff">subagente …</text></g>
+          </g>
+          <g filter="url(#lp-glow)"><rect x="800" y="88" width="156" height="64" rx="14" fill="#1f1604" stroke="url(#lp-grad)" stroke-width="2.5"/></g>
+          <text x="878" y="116" text-anchor="middle" fill="#fbbf24" font-family="Inter,sans-serif" font-weight="700" font-size="16">Resumo</text>
+          <text x="878" y="135" text-anchor="middle" fill="#fcd9a0" font-family="Inter,sans-serif" font-size="12">volta limpo</text>
+        </svg>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-4">
+        <a href="curso/trilha1/index.html" class="text-center px-6 py-3 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-500 transition-colors">
+          Começar pela Trilha 1 →
+        </a>
+        <a href="#trilhas" class="text-center px-6 py-3 bg-dark-700 text-neutral-300 rounded-lg font-semibold hover:bg-dark-600 transition-colors">
+          Ver as 4 trilhas
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+
+    <!-- O QUE VOCE VAI APRENDER -->
+    <section class="mb-16">
+      <h2 class="text-2xl font-bold mb-2">O que você vai aprender</h2>
+      <p class="text-neutral-400 mb-8 max-w-3xl">De "nunca criei um subagente" a "monto e orquestro meu próprio sistema de especialistas". Sete resultados concretos:</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5 flex items-start space-x-3">
+          <span class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 text-sm font-bold flex items-center justify-center flex-shrink-0">1</span>
+          <p class="text-neutral-300">Explicar a diferença entre <strong class="text-neutral-100">agente, subagente e skill</strong> e escolher a primitiva certa.</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5 flex items-start space-x-3">
+          <span class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 text-sm font-bold flex items-center justify-center flex-shrink-0">2</span>
+          <p class="text-neutral-300">Articular o motivo real dos subagentes (<strong class="text-neutral-100">proteção de contexto</strong>) e aplicar a "pergunta que decide".</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5 flex items-start space-x-3">
+          <span class="w-7 h-7 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold flex items-center justify-center flex-shrink-0">3</span>
+          <p class="text-neutral-300">Criar um subagente custom do zero: <strong class="text-neutral-100">frontmatter + corpo</strong>, com descrição que dispara sozinha.</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5 flex items-start space-x-3">
+          <span class="w-7 h-7 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold flex items-center justify-center flex-shrink-0">4</span>
+          <p class="text-neutral-300">Restringir ferramentas (<strong class="text-neutral-100">read-only</strong>) e escolher entre <strong class="text-neutral-100">projeto × global</strong>.</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5 flex items-start space-x-3">
+          <span class="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 text-sm font-bold flex items-center justify-center flex-shrink-0">5</span>
+          <p class="text-neutral-300">Casar <strong class="text-neutral-100">modelo com tarefa</strong> (Haiku/Sonnet/Opus) e montar o padrão "chefe inteligente + trabalhadores baratos".</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5 flex items-start space-x-3">
+          <span class="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 text-sm font-bold flex items-center justify-center flex-shrink-0">6</span>
+          <p class="text-neutral-300">Orquestrar encadeamentos, <strong class="text-neutral-100">revisor imparcial</strong> e workflows dinâmicos — com noção de custo.</p>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-dark-600 p-5 flex items-start space-x-3 md:col-span-2">
+          <span class="w-7 h-7 rounded-full bg-purple-500/20 text-purple-400 text-sm font-bold flex items-center justify-center flex-shrink-0">7</span>
+          <p class="text-neutral-300">Levar o conceito para <strong class="text-neutral-100">outros ambientes/modelos</strong> (Codex, cross-runtime) e montar sua própria biblioteca de especialistas com segurança.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 CARDS DE TRILHA -->
+    <section id="trilhas" class="mb-16 scroll-mt-20">
+      <h2 class="text-2xl font-bold mb-2">As 4 trilhas</h2>
+      <p class="text-neutral-400 mb-8 max-w-3xl">Cada trilha tem 6 módulos com desenho, exemplo <span class="font-mono">.md</span>, prompts prontos e exercício. Siga em ordem ou pule pra onde precisa.</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- T1 Emerald -->
+        <a href="curso/trilha1/index.html" class="group bg-gradient-to-br from-emerald-900/30 to-dark-800 rounded-xl border border-emerald-500/30 p-6 hover:border-emerald-500/30 transition-all">
+          <div class="flex items-center justify-between mb-3">
+            <span class="inline-block px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-full">TRILHA 1</span>
+            <span class="text-xs text-neutral-500">6 módulos · Básico</span>
+          </div>
+          <h3 class="text-xl font-bold mb-1 group-hover:text-emerald-400 transition-colors">🌱 Fundamentos</h3>
+          <p class="text-emerald-400 text-sm font-medium mb-4">Entender antes de criar</p>
+          <ul class="space-y-1.5 text-sm text-neutral-300">
+            <li>M1.1 · O que é um subagente</li>
+            <li>M1.2 · O verdadeiro motivo: contexto limpo</li>
+            <li>M1.3 · Agente × Subagente × Skill</li>
+            <li>M1.4 · Built-in × Custom</li>
+            <li>M1.5 · A pergunta que decide</li>
+            <li>M1.6 · Anatomia de um subagente</li>
+          </ul>
+          <span class="inline-flex items-center mt-4 text-sm font-semibold text-emerald-400">Entrar na trilha →</span>
+        </a>
+
+        <!-- T2 Blue -->
+        <a href="curso/trilha2/index.html" class="group bg-gradient-to-br from-blue-900/30 to-dark-800 rounded-xl border border-blue-500/30 p-6 hover:border-blue-500/30 transition-all">
+          <div class="flex items-center justify-between mb-3">
+            <span class="inline-block px-3 py-1 bg-blue-500/20 text-blue-400 text-xs font-semibold rounded-full">TRILHA 2</span>
+            <span class="text-xs text-neutral-500">6 módulos · Prático</span>
+          </div>
+          <h3 class="text-xl font-bold mb-1 group-hover:text-blue-400 transition-colors">🛠️ Criando na prática</h3>
+          <p class="text-blue-400 text-sm font-medium mb-4">Do .md ao especialista</p>
+          <ul class="space-y-1.5 text-sm text-neutral-300">
+            <li>M2.1 · O frontmatter completo</li>
+            <li>M2.2 · A descrição é o gatilho</li>
+            <li>M2.3 · O corpo é o cérebro</li>
+            <li>M2.4 · Ferramentas e permissões</li>
+            <li>M2.5 · Projeto × Global</li>
+            <li>M2.6 · Criando com /agents</li>
+          </ul>
+          <span class="inline-flex items-center mt-4 text-sm font-semibold text-blue-400">Entrar na trilha →</span>
+        </a>
+
+        <!-- T3 Amber -->
+        <a href="curso/trilha3/index.html" class="group bg-gradient-to-br from-amber-900/30 to-dark-800 rounded-xl border border-amber-500/30 p-6 hover:border-amber-500/30 transition-all">
+          <div class="flex items-center justify-between mb-3">
+            <span class="inline-block px-3 py-1 bg-amber-500/20 text-amber-400 text-xs font-semibold rounded-full">TRILHA 3</span>
+            <span class="text-xs text-neutral-500">6 módulos · Praticante</span>
+          </div>
+          <h3 class="text-xl font-bold mb-1 group-hover:text-amber-400 transition-colors">⚙️ Modelo, custo e orquestração</h3>
+          <p class="text-amber-400 text-sm font-medium mb-4">Chefe inteligente, trabalhadores baratos</p>
+          <ul class="space-y-1.5 text-sm text-neutral-300">
+            <li>M3.1 · Modelo por tarefa</li>
+            <li>M3.2 · A economia real</li>
+            <li>M3.3 · Encadeando subagentes</li>
+            <li>M3.4 · O revisor imparcial</li>
+            <li>M3.5 · Workflows dinâmicos</li>
+            <li>M3.6 · Padrões de orquestração</li>
+          </ul>
+          <span class="inline-flex items-center mt-4 text-sm font-semibold text-amber-400">Entrar na trilha →</span>
+        </a>
+
+        <!-- T4 Purple -->
+        <a href="curso/trilha4/index.html" class="group bg-gradient-to-br from-purple-900/30 to-dark-800 rounded-xl border border-purple-500/30 p-6 hover:border-purple-500/30 transition-all">
+          <div class="flex items-center justify-between mb-3">
+            <span class="inline-block px-3 py-1 bg-purple-500/20 text-purple-400 text-xs font-semibold rounded-full">TRILHA 4</span>
+            <span class="text-xs text-neutral-500">6 módulos · Avançado</span>
+          </div>
+          <h3 class="text-xl font-bold mb-1 group-hover:text-purple-400 transition-colors">🚀 Avançado & cross-ambiente</h3>
+          <p class="text-purple-400 text-sm font-medium mb-4">Além do Claude Code</p>
+          <ul class="space-y-1.5 text-sm text-neutral-300">
+            <li>M4.1 · Arquitetura multiagente em escala</li>
+            <li>M4.2 · Subagentes no Codex e outros</li>
+            <li>M4.3 · Comparando modelos por papel</li>
+            <li>M4.4 · Segurança</li>
+            <li>M4.5 · Bibliotecas e reuso</li>
+            <li>M4.6 · Montando seu sistema</li>
+          </ul>
+          <span class="inline-flex items-center mt-4 text-sm font-semibold text-purple-400">Entrar na trilha →</span>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- RESUMO EM UMA TELA -->
+    <section class="mb-16">
+      <div class="bg-gradient-to-br from-amber-900/30 via-dark-800 to-dark-800 rounded-xl border border-amber-500/30 p-6 sm:p-8">
+        <h2 class="text-2xl font-bold mb-2 flex items-center">
+          <span class="mr-3">🧭</span> Resumo em uma tela
+        </h2>
+        <p class="text-neutral-400 mb-7 max-w-3xl">A decisão inteira sobre subagentes, condensada. Guarde isto — é o curso em nove bullets.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+          <div class="flex items-start space-x-3">
+            <span class="text-amber-400 mt-0.5 flex-shrink-0">⚡</span>
+            <p class="text-neutral-300"><strong class="text-neutral-100">Uma coisa rápida</strong> → faça direto no chat.</p>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-amber-400 mt-0.5 flex-shrink-0">📦</span>
+            <p class="text-neutral-300"><strong class="text-neutral-100">Tarefa pesada ou barulhenta</strong> → subagente.</p>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-amber-400 mt-0.5 flex-shrink-0">👥</span>
+            <p class="text-neutral-300"><strong class="text-neutral-100">Compartilhar com a equipe</strong> → <span class="font-mono text-sm">.claude/agents/</span> no repo.</p>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-amber-400 mt-0.5 flex-shrink-0">🔒</span>
+            <p class="text-neutral-300"><strong class="text-neutral-100">Manter só para você</strong> → <span class="font-mono text-sm">~/.claude/agents/</span> na home.</p>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-amber-400 mt-0.5 flex-shrink-0">💰</span>
+            <p class="text-neutral-300"><strong class="text-neutral-100">Economizar dinheiro</strong> → trabalhadores baratos, um líder inteligente.</p>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-amber-400 mt-0.5 flex-shrink-0">✅</span>
+            <p class="text-neutral-300"><strong class="text-neutral-100">Melhores resultados</strong> → deixe um agente novo revisar seu trabalho.</p>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-amber-400 mt-0.5 flex-shrink-0">🌊</span>
+            <p class="text-neutral-300"><strong class="text-neutral-100">Tarefa gigante em paralelo</strong> → workflow dinâmico (cuidado com a conta).</p>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-amber-400 mt-0.5 flex-shrink-0">🤔</span>
+            <p class="text-neutral-300"><strong class="text-neutral-100">Não tem certeza?</strong> → "É uma pilha que eu nunca vou reler?" Se sim, subagente.</p>
+          </div>
+        </div>
+        <div class="mt-7 bg-dark-900/50 rounded-lg border border-primary/30 p-4 flex items-start space-x-3">
+          <span class="text-primary mt-0.5 flex-shrink-0">🚀</span>
+          <p class="text-neutral-300"><strong class="text-primary">Crie seu primeiro em segundos:</strong> digite <span class="font-mono text-sm bg-dark-700 px-2 py-0.5 rounded">/agents</span>.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-dark-600 py-10 mt-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <p class="text-neutral-300 mb-2">Curso <strong>Subagentes</strong> · formato INEMA.CLUB · 2026</p>
+      <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 text-sm font-medium">INEMA.CLUB</a>
+    </div>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script>
+    // Theme Toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+    const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+    const html = document.documentElement;
+
+    if (localStorage.getItem('theme') === 'light' || (!localStorage.getItem('theme') && !html.classList.contains('dark'))) {
+      themeToggleDarkIcon.classList.remove('hidden');
+      html.classList.remove('dark');
+    } else {
+      themeToggleLightIcon.classList.remove('hidden');
+    }
+
+    themeToggle.addEventListener('click', () => {
+      themeToggleDarkIcon.classList.toggle('hidden');
+      themeToggleLightIcon.classList.toggle('hidden');
+      html.classList.toggle('dark');
+      localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+    });
+  </script>
+
+</body>
+</html>
