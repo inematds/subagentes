@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Criando com /agents + como o Claude escolhe | Subagentes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#FACC15',
+            dark: { 900: '#111827', 800: '#1f2937', 700: '#374151', 600: '#4b5563' }
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .dark body { background-color: #111827; }
+    .topic-explanation { display: none; }
+    .topic-explanation.active { display: block; }
+
+    /* Light mode overrides - OBRIGATORIO */
+    html:not(.dark) body { background-color: #f8fafc; }
+    html:not(.dark) .bg-dark-900 { background-color: #ffffff; }
+    html:not(.dark) .bg-dark-800 { background-color: #f9fafb; }
+    html:not(.dark) .bg-dark-700 { background-color: #f3f4f6; }
+    html:not(.dark) .bg-dark-600 { background-color: #e5e7eb; }
+    html:not(.dark) .text-neutral-100 { color: #111827; }
+    html:not(.dark) .text-neutral-300 { color: #4b5563; }
+    html:not(.dark) .text-neutral-400 { color: #6b7280; }
+    html:not(.dark) .text-neutral-500 { color: #9ca3af; }
+    html:not(.dark) .border-dark-600 { border-color: #d1d5db; }
+    html:not(.dark) .border-dark-700 { border-color: #e5e7eb; }
+
+    /* Light mode - cores de acento (trilha blue T2) */
+    html:not(.dark) .text-blue-400 { color: #2563eb; }
+    html:not(.dark) .bg-blue-500\/20 { background-color: rgba(37, 99, 235, 0.12); }
+    html:not(.dark) .bg-blue-500\/10 { background-color: rgba(37, 99, 235, 0.08); }
+    html:not(.dark) .border-blue-500\/30 { border-color: rgba(37, 99, 235, 0.25); }
+    html:not(.dark) .hover\:bg-blue-500\/30:hover { background-color: rgba(37, 99, 235, 0.18); }
+    html:not(.dark) .from-blue-900\/30 { --tw-gradient-from: rgba(30, 58, 138, 0.08); }
+    html:not(.dark) .text-sky-400 { color: #0369a1; }
+    html:not(.dark) .hover\:text-sky-300:hover { color: #0284c7; }
+
+    /* Light mode - remove gradientes */
+    html:not(.dark) [class*="bg-gradient-to"] { background-image: none !important; }
+
+    /* Light mode - cores especiais */
+    html:not(.dark) .text-primary { color: #a16207; }
+    html:not(.dark) .bg-primary\/10 { background-color: rgba(161, 98, 7, 0.08); }
+    html:not(.dark) .border-primary\/40 { border-color: rgba(161, 98, 7, 0.25); }
+    html:not(.dark) .text-yellow-400 { color: #a16207; }
+    html:not(.dark) .hover\:text-yellow-300:hover { color: #854d0e; }
+
+    /* Light mode - nav */
+    html:not(.dark) nav { background-color: rgba(255,255,255,0.95) !important; border-color: #e5e7eb !important; }
+
+    /* Dark mode - bordas suavizadas */
+    .dark .border-dark-600 { border-color: #374151; }
+    .dark .divide-dark-600 > :not([hidden]) ~ :not([hidden]) { border-color: #374151; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .svg-anim { animation: none !important; }
+    }
+    @keyframes glow-pulse { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+    @keyframes dash-flow { to { stroke-dashoffset: -30; } }
+    @keyframes float-up { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+    .svg-glow { animation: glow-pulse 3s ease-in-out infinite; }
+    .svg-flow { animation: dash-flow 2s linear infinite; }
+    .svg-float { animation: float-up 4s ease-in-out infinite; }
+  </style>
+</head>
+<body class="bg-dark-900 text-neutral-100 min-h-screen">
+
+  <!-- NAVEGAÇÃO GLOBAL -->
+  <nav class="sticky top-0 z-50 bg-dark-900/95 backdrop-blur-sm border-b border-dark-600">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-14">
+        <div class="flex items-center space-x-3">
+          <a href="../../index.html" class="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+            <span class="text-xl">🤖</span>
+            <span class="font-bold text-primary hidden sm:inline">Subagentes</span>
+          </a>
+          <span class="text-dark-600 hidden sm:inline">|</span>
+          <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 text-sm font-medium transition-colors hidden sm:inline">INEMA.CLUB</a>
+        </div>
+        <div class="flex items-center space-x-1">
+          <a href="../trilha1/index.html" class="px-3 py-1.5 rounded-lg text-sm text-neutral-400 hover:text-neutral-200 hover:bg-dark-700 transition-all">T1</a>
+          <a href="index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-blue-400 bg-blue-500/10 transition-all">T2</a>
+          <a href="../trilha3/index.html" class="px-3 py-1.5 rounded-lg text-sm text-neutral-400 hover:text-neutral-200 hover:bg-dark-700 transition-all">T3</a>
+          <a href="../trilha4/index.html" class="px-3 py-1.5 rounded-lg text-sm text-neutral-400 hover:text-neutral-200 hover:bg-dark-700 transition-all">T4</a>
+          <!-- Theme Toggle -->
+          <button onclick="toggleTheme()" class="ml-2 p-1.5 rounded-lg bg-dark-700 hover:bg-dark-600 transition-colors" title="Alternar tema">
+            <svg id="icon-sun" class="w-4 h-4 text-yellow-400 hidden" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+            </svg>
+            <svg id="icon-moon" class="w-4 h-4 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- BREADCRUMB -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+    <nav class="flex items-center space-x-2 text-sm text-neutral-500">
+      <a href="../../index.html" class="hover:text-neutral-300 transition-colors">Início</a>
+      <span>›</span>
+      <a href="index.html" class="hover:text-blue-400 transition-colors">Trilha 2 · Na prática</a>
+      <span>›</span>
+      <span class="text-blue-400">Módulo 2.6</span>
+    </nav>
+  </div>
+
+  <!-- HEADER DO MÓDULO -->
+  <header class="bg-gradient-to-br from-blue-900/30 via-dark-800 to-dark-900 border-b border-dark-600 mb-8 py-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center space-x-2 mb-3">
+        <span class="text-xs font-bold tracking-widest uppercase text-blue-400 bg-blue-500/20 border border-blue-500/30 px-3 py-1 rounded-full">MÓDULO 2.6 · Trilha 2 · Criando na prática</span>
+      </div>
+      <h1 class="text-2xl font-bold text-neutral-100 mb-2">🧙 Criando com /agents + como o Claude escolhe</h1>
+      <p class="text-neutral-400 max-w-2xl mb-5">Do zero ao agente invocado: use o wizard <code class="text-blue-400 bg-dark-700 px-1 rounded">/agents</code> para criar, ajustar e controlar qual agente o Claude aciona — e quando.</p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-dark-800 rounded-lg p-3 border border-dark-600">
+          <div class="text-blue-400 font-bold text-lg">7</div>
+          <div class="text-neutral-500 text-xs">Tópicos</div>
+        </div>
+        <div class="bg-dark-800 rounded-lg p-3 border border-dark-600">
+          <div class="text-blue-400 font-bold text-lg">~45 min</div>
+          <div class="text-neutral-500 text-xs">Duração</div>
+        </div>
+        <div class="bg-dark-800 rounded-lg p-3 border border-dark-600">
+          <div class="text-blue-400 font-bold text-lg">Prático</div>
+          <div class="text-neutral-500 text-xs">Nível</div>
+        </div>
+        <div class="bg-dark-800 rounded-lg p-3 border border-dark-600">
+          <div class="text-blue-400 font-bold text-lg">Hands-on</div>
+          <div class="text-neutral-500 text-xs">Tipo</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+
+    <!-- ABERTURA + SVG FUTURISTA -->
+    <section class="mb-10">
+      <p class="text-neutral-300 text-lg leading-relaxed mb-8 max-w-3xl">
+        Você já entende o que é um subagente, sabe escrever seu <code class="text-blue-400">.md</code> e conhece a diferença entre projeto e global. Agora vem a pergunta prática: <strong class="text-neutral-100">como crio um agente de verdade, do zero?</strong> O comando <code class="text-blue-400">/agents</code> é o wizard nativo do Claude Code — lista o que existe, abre o criador guiado e deixa você trimar o resultado. Neste módulo você vai criar um agente completo (<code class="text-blue-400">plan-roaster</code>) e aprender exatamente como o Claude decide qual agente chamar.
+      </p>
+
+      <!-- SVG FUTURISTA: Fluxo do /agents wizard -->
+      <div class="w-full rounded-2xl overflow-hidden border border-blue-500/20 bg-dark-800 p-2 mb-2">
+        <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagrama do fluxo /agents: usuário digita /agents → wizard mostra opções → agente criado → Claude roteia automaticamente" class="w-full h-auto">
+          <defs>
+            <radialGradient id="glow-blue" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#60a5fa" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="glow-cyan" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="blur-glow">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <pattern id="grid-bg" width="30" height="30" patternUnits="userSpaceOnUse">
+              <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#1e3a5f" stroke-width="0.5" opacity="0.4"/>
+            </pattern>
+            <marker id="arrow-blue" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+              <path d="M0,0 L0,8 L8,4 Z" fill="#60a5fa"/>
+            </marker>
+            <marker id="arrow-cyan" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+              <path d="M0,0 L0,8 L8,4 Z" fill="#38bdf8"/>
+            </marker>
+          </defs>
+
+          <!-- Background grid -->
+          <rect width="800" height="320" fill="#0e1622" rx="12"/>
+          <rect width="800" height="320" fill="url(#grid-bg)" rx="12"/>
+
+          <!-- Glow halos -->
+          <circle cx="120" cy="160" r="60" fill="url(#glow-blue)" class="svg-anim svg-glow"/>
+          <circle cx="400" cy="160" r="80" fill="url(#glow-cyan)" class="svg-anim svg-glow" style="animation-delay:1s"/>
+          <circle cx="680" cy="160" r="60" fill="url(#glow-blue)" class="svg-anim svg-glow" style="animation-delay:2s"/>
+
+          <!-- Nó 1: Usuário / /agents -->
+          <rect x="40" y="120" width="160" height="80" rx="10" fill="#0e1622" stroke="#60a5fa" stroke-width="1.5"/>
+          <text x="120" y="152" text-anchor="middle" fill="#60a5fa" font-size="13" font-family="monospace" font-weight="bold">/agents</text>
+          <text x="120" y="170" text-anchor="middle" fill="#9ad6ff" font-size="10" font-family="monospace">wizard nativo</text>
+          <text x="120" y="188" text-anchor="middle" fill="#4b5563" font-size="9" font-family="monospace">create · list · edit</text>
+
+          <!-- Seta 1→2 -->
+          <line x1="200" y1="160" x2="275" y2="160" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow-blue)" class="svg-anim svg-flow"/>
+
+          <!-- Nó 2: Wizard / arquivo .md -->
+          <rect x="275" y="95" width="250" height="130" rx="10" fill="#0c1825" stroke="#38bdf8" stroke-width="2"/>
+          <text x="400" y="118" text-anchor="middle" fill="#38bdf8" font-size="11" font-family="monospace" font-weight="bold">plan-roaster.md</text>
+          <rect x="290" y="128" width="220" height="14" rx="3" fill="#1e3a5f" opacity="0.7"/>
+          <text x="400" y="139" text-anchor="middle" fill="#9ad6ff" font-size="9" font-family="monospace">name: plan-roaster</text>
+          <rect x="290" y="148" width="220" height="14" rx="3" fill="#1e3a5f" opacity="0.5"/>
+          <text x="400" y="159" text-anchor="middle" fill="#9ad6ff" font-size="9" font-family="monospace">description: "Use proativamente..."</text>
+          <rect x="290" y="168" width="220" height="14" rx="3" fill="#1e3a5f" opacity="0.5"/>
+          <text x="400" y="179" text-anchor="middle" fill="#9ad6ff" font-size="9" font-family="monospace">tools: [Read, Bash]</text>
+          <rect x="290" y="188" width="220" height="14" rx="3" fill="#1e3a5f" opacity="0.3"/>
+          <text x="400" y="199" text-anchor="middle" fill="#4b5563" font-size="9" font-family="monospace">model: sonnet</text>
+          <!-- glow border -->
+          <rect x="275" y="95" width="250" height="130" rx="10" fill="none" stroke="#38bdf8" stroke-width="0.5" opacity="0.5" filter="url(#blur-glow)"/>
+
+          <!-- Seta 2→3 -->
+          <line x1="525" y1="160" x2="600" y2="160" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow-blue)" class="svg-anim svg-flow" style="animation-delay:0.5s"/>
+
+          <!-- Nó 3: Claude roteia -->
+          <rect x="600" y="120" width="160" height="80" rx="10" fill="#0e1622" stroke="#60a5fa" stroke-width="1.5"/>
+          <text x="680" y="150" text-anchor="middle" fill="#60a5fa" font-size="11" font-family="monospace" font-weight="bold">Claude lê</text>
+          <text x="680" y="165" text-anchor="middle" fill="#9ad6ff" font-size="10" font-family="monospace">description →</text>
+          <text x="680" y="180" text-anchor="middle" fill="#38bdf8" font-size="10" font-family="monospace">roteia ✓</text>
+
+          <!-- Labels de fase -->
+          <text x="120" y="220" text-anchor="middle" fill="#4b5563" font-size="9" font-family="monospace">① abrir wizard</text>
+          <text x="400" y="242" text-anchor="middle" fill="#4b5563" font-size="9" font-family="monospace">② preencher / gerar com Claude</text>
+          <text x="680" y="220" text-anchor="middle" fill="#4b5563" font-size="9" font-family="monospace">③ agente ativo</text>
+
+          <!-- Label bottom -->
+          <text x="400" y="308" text-anchor="middle" fill="#374151" font-size="9" font-family="monospace">recriação ilustrativa — não screenshot real</text>
+        </svg>
+      </div>
+      <p class="text-xs text-neutral-500 text-center mb-6">Fluxo do wizard <code>/agents</code>: do comando ao agente ativo em 3 passos</p>
+    </section>
+
+    <!-- CONTEÚDO DETALHADO -->
+    <h2 class="text-2xl font-bold mb-6">Conteúdo detalhado</h2>
+
+    <!-- TÓPICO 1: /agents — ver e criar -->
+    <section id="topico-1" class="bg-dark-800 rounded-2xl border border-dark-600 mb-4 overflow-hidden">
+      <div class="divide-y divide-dark-600">
+        <div class="px-6 py-5">
+          <div class="flex items-center space-x-4 mb-0">
+            <span class="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 font-bold text-lg flex items-center justify-center flex-shrink-0">1</span>
+            <div>
+              <h2 class="text-xl font-bold text-neutral-100">🔍 O comando /agents — ver e criar</h2>
+              <p class="text-neutral-500 text-sm mt-0.5">Seu painel de controle de subagentes</p>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-5">
+          <p class="text-neutral-300 mb-4">O <code class="text-blue-400 bg-dark-700 px-1 rounded">/agents</code> é o ponto de entrada para tudo relacionado a agentes customizados no Claude Code. Ele exibe a lista completa dos agentes disponíveis no projeto e no global, e abre o wizard de criação guiado.</p>
+
+          <!-- Grid ✓/✗ -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <div class="bg-emerald-900/20 border border-emerald-500/30 rounded-xl p-4">
+              <div class="text-emerald-400 font-semibold text-sm mb-2">✓ O que /agents faz</div>
+              <ul class="space-y-1 text-sm text-neutral-300">
+                <li>• Lista todos os agentes disponíveis (projeto + global)</li>
+                <li>• Mostra onde cada arquivo .md está salvo</li>
+                <li>• Abre o wizard de criação interativo</li>
+                <li>• Permite editar agents existentes</li>
+                <li>• Exibe description, tools e modelo configurados</li>
+              </ul>
+            </div>
+            <div class="bg-red-900/20 border border-red-500/30 rounded-xl p-4">
+              <div class="text-red-400 font-semibold text-sm mb-2">✗ O que /agents não faz</div>
+              <ul class="space-y-1 text-sm text-neutral-300">
+                <li>• Não cria o arquivo manualmente (o wizard cria)</li>
+                <li>• Não executa o agente diretamente</li>
+                <li>• Não mostra built-ins do Claude Code</li>
+                <li>• Não sincroniza com outros projetos</li>
+                <li>• Não define quando o Claude ativa (isso é a description)</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Tópico expansível -->
+          <div class="border border-dark-600 rounded-xl overflow-hidden">
+            <button onclick="toggleTopic(this)" class="w-full px-5 py-3 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+              <span class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
+              <span class="text-base">📂</span>
+              <div>
+                <span class="font-medium text-sm">Listando agentes existentes</span>
+                <span class="text-neutral-500 text-xs ml-2">— o que você vai ver</span>
+              </div>
+            </button>
+            <div class="topic-explanation px-5 pb-4">
+              <div class="bg-dark-700/50 rounded-lg p-4 space-y-3 ml-9">
+                <div><span class="text-blue-400 font-semibold text-sm">O que é:</span><p class="text-neutral-300 text-sm mt-1">Ao rodar <code class="text-blue-400">/agents</code> sem parâmetros, o Claude Code varre os diretórios <code class="text-blue-400">.claude/agents/</code> do projeto e do global, lê o frontmatter de cada <code class="text-blue-400">.md</code> e monta uma lista com nome, description truncada e localização.</p></div>
+                <div><span class="text-blue-400 font-semibold text-sm">Por que aprender:</span><p class="text-neutral-300 text-sm mt-1">Antes de criar um agente novo, sempre liste os existentes — você pode já ter um que cobre o caso de uso, ou descobrir nomes que colidem com o que planejava criar.</p></div>
+                <div><span class="text-blue-400 font-semibold text-sm">Conceitos-chave:</span><p class="text-neutral-300 text-sm mt-1">Projeto prevalece sobre global quando há conflito de nome. O wizard de criação já avisa se o nome existe. A lista inclui built-ins do Claude Code separados dos seus customs.</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 2: generate-with-Claude × manual -->
+    <section id="topico-2" class="bg-dark-800 rounded-2xl border border-dark-600 mb-4 overflow-hidden">
+      <div class="divide-y divide-dark-600">
+        <div class="px-6 py-5">
+          <div class="flex items-center space-x-4">
+            <span class="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 font-bold text-lg flex items-center justify-center flex-shrink-0">2</span>
+            <div>
+              <h2 class="text-xl font-bold text-neutral-100">⚡ Generate-with-Claude × manual</h2>
+              <p class="text-neutral-500 text-sm mt-0.5">Duas formas de preencher o .md — quando usar cada uma</p>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-5">
+          <!-- Box conceito principal -->
+          <div class="bg-gradient-to-r from-blue-900/30 to-dark-700/50 border border-blue-500/30 rounded-xl p-5 mb-4">
+            <div class="text-blue-400 font-bold text-sm mb-2">⚡ O atalho "Gerar com Claude"</div>
+            <p class="text-neutral-300 text-sm">Dentro do wizard, a opção <strong class="text-neutral-100">Generate with Claude</strong> usa o modelo atual para rascunhar o arquivo <code class="text-blue-400">.md</code> a partir de uma descrição de alto nível que você digita. É o ponto de partida mais rápido — mas o output gerado quase sempre precisa de trim na description.</p>
+          </div>
+
+          <!-- Timeline: fluxos paralelos -->
+          <div class="space-y-3 mb-4">
+            <div class="flex items-start space-x-4 p-4 bg-dark-700/50 rounded-xl border border-dark-600">
+              <div class="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0 text-blue-400 font-bold text-sm">G</div>
+              <div>
+                <div class="font-semibold text-sm mb-1 text-neutral-100">Gerar com Claude</div>
+                <p class="text-neutral-400 text-sm">Claude escreve o corpo, escolhe tools e sugere um modelo. Você descreve o objetivo em linguagem natural. Saída em segundos. <span class="text-yellow-400">Exige trim da description para evitar texto longo demais.</span></p>
+              </div>
+            </div>
+            <div class="flex items-start space-x-4 p-4 bg-dark-700/50 rounded-xl border border-dark-600">
+              <div class="w-10 h-10 rounded-full bg-dark-600 border border-dark-500 flex items-center justify-center flex-shrink-0 text-neutral-400 font-bold text-sm">M</div>
+              <div>
+                <div class="font-semibold text-sm mb-1 text-neutral-100">Manual (editar direto)</div>
+                <p class="text-neutral-400 text-sm">Você escreve o <code class="text-blue-400">.md</code> do zero num editor. Controle total, sem surpresas. Ideal quando já tem um template pronto ou está iterando sobre um agente existente.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="border border-dark-600 rounded-xl overflow-hidden">
+            <button onclick="toggleTopic(this)" class="w-full px-5 py-3 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+              <span class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center flex-shrink-0">2</span>
+              <span class="text-base">🤖</span>
+              <div>
+                <span class="font-medium text-sm">Quando gerar × escrever à mão</span>
+                <span class="text-neutral-500 text-xs ml-2">— regra de decisão</span>
+              </div>
+            </button>
+            <div class="topic-explanation px-5 pb-4">
+              <div class="bg-dark-700/50 rounded-lg p-4 space-y-3 ml-9">
+                <div><span class="text-blue-400 font-semibold text-sm">O que é:</span><p class="text-neutral-300 text-sm mt-1">A escolha entre os dois modos define velocidade de criação vs. controle do resultado. Gerar é ótimo para o primeiro rascunho; manual é melhor para iterações finas.</p></div>
+                <div><span class="text-blue-400 font-semibold text-sm">Por que aprender:</span><p class="text-neutral-300 text-sm mt-1">Agentes gerados automaticamente tendem a ter descriptions verbosas que disparam no momento errado. Saber quando trimar evita misfires custosos.</p></div>
+                <div><span class="text-blue-400 font-semibold text-sm">Conceitos-chave:</span><p class="text-neutral-300 text-sm mt-1">Regra prática — gere o rascunho, abra o <code class="text-blue-400">.md</code> e corte a description para no máximo 2-3 frases com gatilho explícito. O corpo pode ser rico; a description deve ser cirúrgica.</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 3: wizard — tools/model/color/memory -->
+    <section id="topico-3" class="bg-dark-800 rounded-2xl border border-dark-600 mb-4 overflow-hidden">
+      <div class="divide-y divide-dark-600">
+        <div class="px-6 py-5">
+          <div class="flex items-center space-x-4">
+            <span class="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 font-bold text-lg flex items-center justify-center flex-shrink-0">3</span>
+            <div>
+              <h2 class="text-xl font-bold text-neutral-100">🧩 Escolhas no wizard: tools, model, color, memory</h2>
+              <p class="text-neutral-500 text-sm mt-0.5">As quatro decisões que definem o comportamento do agente</p>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-5">
+          <!-- Box tip -->
+          <div class="bg-primary/10 border border-primary/40 rounded-xl p-4 mb-4">
+            <div class="text-primary font-semibold text-sm mb-1">💡 Dica prática</div>
+            <p class="text-neutral-300 text-sm">O wizard guia você por cada campo, mas você pode deixar em branco e editar depois direto no <code class="text-blue-400">.md</code>. O campo <strong>tools</strong> é o mais crítico — agentes com acesso irrestrito podem tomar ações inesperadas.</p>
+          </div>
+
+          <!-- Grid de 4 decisões -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <div class="bg-dark-700/50 border border-blue-500/20 rounded-xl p-4">
+              <div class="text-blue-400 font-bold text-sm mb-2">🔧 tools</div>
+              <p class="text-neutral-400 text-sm">Lista de ferramentas permitidas. Prefira listas explícitas (ex.: <code class="text-blue-400">["Read","Bash","WebSearch"]</code>). Omitir = herda todas as tools do contexto pai.</p>
+            </div>
+            <div class="bg-dark-700/50 border border-blue-500/20 rounded-xl p-4">
+              <div class="text-blue-400 font-bold text-sm mb-2">🧠 model</div>
+              <p class="text-neutral-400 text-sm">Modelo a usar: <code class="text-blue-400">haiku</code> para tarefas rápidas/baratas, <code class="text-blue-400">sonnet</code> para o equilíbrio, <code class="text-blue-400">opus</code> para raciocínio pesado.</p>
+            </div>
+            <div class="bg-dark-700/50 border border-blue-500/20 rounded-xl p-4">
+              <div class="text-blue-400 font-bold text-sm mb-2">🎨 color</div>
+              <p class="text-neutral-400 text-sm">Cor do badge do agente na UI do Claude Code. Puramente estética — útil para diferenciar agentes rapidamente na lista do <code class="text-blue-400">/agents</code>.</p>
+            </div>
+            <div class="bg-dark-700/50 border border-blue-500/20 rounded-xl p-4">
+              <div class="text-blue-400 font-bold text-sm mb-2">💾 memory</div>
+              <p class="text-neutral-400 text-sm">Controla se o agente pode ler/gravar na memória persistente (<code class="text-blue-400">allow</code> / <code class="text-blue-400">deny</code>). Na maioria dos casos, <code class="text-blue-400">deny</code> é mais seguro — agentes especialistas não precisam de memória.</p>
+            </div>
+          </div>
+
+          <div class="border border-dark-600 rounded-xl overflow-hidden">
+            <button onclick="toggleTopic(this)" class="w-full px-5 py-3 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+              <span class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center flex-shrink-0">3</span>
+              <span class="text-base">⚙️</span>
+              <div>
+                <span class="font-medium text-sm">Defaults do wizard vs. produção</span>
+                <span class="text-neutral-500 text-xs ml-2">— o que ajustar</span>
+              </div>
+            </button>
+            <div class="topic-explanation px-5 pb-4">
+              <div class="bg-dark-700/50 rounded-lg p-4 space-y-3 ml-9">
+                <div><span class="text-blue-400 font-semibold text-sm">O que é:</span><p class="text-neutral-300 text-sm mt-1">O wizard usa defaults conservadores: sem tools explícitas, sem modelo definido. Em produção você quase sempre vai querer declarar <code class="text-blue-400">tools</code> e <code class="text-blue-400">model</code> para comportamento previsível.</p></div>
+                <div><span class="text-blue-400 font-semibold text-sm">Por que aprender:</span><p class="text-neutral-300 text-sm mt-1">Agente sem <code class="text-blue-400">model</code> definido herda o modelo do claude pai — pode mudar de sessão para sessão dependendo do seu plano. Fixar o modelo garante custos e latência previsíveis.</p></div>
+                <div><span class="text-blue-400 font-semibold text-sm">Conceitos-chave:</span><p class="text-neutral-300 text-sm mt-1">Mínimo recomendado para produção: <code class="text-blue-400">name</code>, <code class="text-blue-400">description</code> (cirúrgica), <code class="text-blue-400">tools</code> (lista explícita), <code class="text-blue-400">model</code>. Color e memory são opcionais.</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 4: Caso plan-roaster (criar + trimar) -->
+    <section id="topico-4" class="bg-dark-800 rounded-2xl border border-dark-600 mb-4 overflow-hidden">
+      <div class="divide-y divide-dark-600">
+        <div class="px-6 py-5">
+          <div class="flex items-center space-x-4">
+            <span class="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 font-bold text-lg flex items-center justify-center flex-shrink-0">4</span>
+            <div>
+              <h2 class="text-xl font-bold text-neutral-100">🔥 Caso plan-roaster: criar e trimar</h2>
+              <p class="text-neutral-500 text-sm mt-0.5">Da ideia ao agente funcionando — walkthrough completo</p>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-5">
+          <!-- Box alerta: description verbosa é o perigo -->
+          <div class="bg-red-900/20 border border-red-500/30 rounded-xl p-4 mb-4">
+            <div class="text-red-400 font-bold text-sm mb-1">⚠️ O erro mais comum pós-geração</div>
+            <p class="text-neutral-300 text-sm">Quando você usa "Generate with Claude", o modelo gera uma description longa e detalhada. Parece bom — mas uma description assim dispara o agente em contextos genéricos demais. <strong class="text-neutral-100">Trim é obrigatório.</strong></p>
+          </div>
+
+          <!-- Timeline de criação -->
+          <div class="space-y-3 mb-4">
+            <div class="flex items-start space-x-4">
+              <div class="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0 text-blue-400 font-bold text-sm">1</div>
+              <div class="flex-1 p-3 bg-dark-700/50 rounded-xl border border-dark-600">
+                <div class="font-semibold text-sm text-neutral-100 mb-1">Digite <code class="text-blue-400">/agents</code> → Create → nome: <code class="text-blue-400">plan-roaster</code></div>
+                <p class="text-neutral-400 text-xs">O wizard pede o nome. Use kebab-case. Este agente vai revisar planos criticamente.</p>
+              </div>
+            </div>
+            <div class="flex items-start space-x-4">
+              <div class="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0 text-blue-400 font-bold text-sm">2</div>
+              <div class="flex-1 p-3 bg-dark-700/50 rounded-xl border border-dark-600">
+                <div class="font-semibold text-sm text-neutral-100 mb-1">Escolha "Generate with Claude" e descreva o objetivo</div>
+                <p class="text-neutral-400 text-xs">Ex.: <em>"agente que revisa planos de implementação, aponta pontos cegos, riscos e alternativas melhores — como um engenheiro sênior cético"</em></p>
+              </div>
+            </div>
+            <div class="flex items-start space-x-4">
+              <div class="w-10 h-10 rounded-full bg-yellow-500/20 border border-yellow-500/30 flex items-center justify-center flex-shrink-0 text-yellow-400 font-bold text-sm">3</div>
+              <div class="flex-1 p-3 bg-dark-700/50 rounded-xl border border-dark-600">
+                <div class="font-semibold text-sm text-neutral-100 mb-1">Abra o <code class="text-blue-400">.claude/agents/plan-roaster.md</code> e trime a description</div>
+                <p class="text-neutral-400 text-xs">Corte para 2-3 frases: o <strong>quando</strong> dispara + o <strong>que</strong> faz. Remova qualquer parágrafo de contexto — isso vai no corpo.</p>
+              </div>
+            </div>
+            <div class="flex items-start space-x-4">
+              <div class="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center flex-shrink-0 text-emerald-400 font-bold text-sm">4</div>
+              <div class="flex-1 p-3 bg-dark-700/50 rounded-xl border border-dark-600">
+                <div class="font-semibold text-sm text-neutral-100 mb-1">Teste invocando por nome: <code class="text-blue-400">@plan-roaster revise este plano</code></div>
+                <p class="text-neutral-400 text-xs">Se disparar corretamente, confira se o output está detalhado. Se for genérico, enriqueça o corpo do <code class="text-blue-400">.md</code>.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="border border-dark-600 rounded-xl overflow-hidden">
+            <button onclick="toggleTopic(this)" class="w-full px-5 py-3 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+              <span class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center flex-shrink-0">4</span>
+              <span class="text-base">✂️</span>
+              <div>
+                <span class="font-medium text-sm">Trim progressivo: quanto cortar</span>
+                <span class="text-neutral-500 text-xs ml-2">— progressive disclosure</span>
+              </div>
+            </button>
+            <div class="topic-explanation px-5 pb-4">
+              <div class="bg-dark-700/50 rounded-lg p-4 space-y-3 ml-9">
+                <div><span class="text-blue-400 font-semibold text-sm">O que é:</span><p class="text-neutral-300 text-sm mt-1">Progressive disclosure aplicado à description: o Claude lê só os primeiros tokens da description para decidir se ativa o agente. Tudo depois do gatilho principal raramente importa para a ativação.</p></div>
+                <div><span class="text-blue-400 font-semibold text-sm">Por que aprender:</span><p class="text-neutral-300 text-sm mt-1">Uma description de 5 linhas com muitos contextos heterogêneos cria ambiguidade — o Claude pode ativar o agente mesmo quando não é ideal. 2-3 frases com gatilho claro são mais precisas.</p></div>
+                <div><span class="text-blue-400 font-semibold text-sm">Conceitos-chave:</span><p class="text-neutral-300 text-sm mt-1">Fórmula de description enxuta: <em>"Use [quando exatamente]. [O que faz em 1 frase]. [Opcional: exemplos de trigger]."</em> O resto vai no corpo do <code class="text-blue-400">.md</code>, que o agente lê depois de ser ativado.</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 5: Seleção — automático/proativo/@nome/--agent -->
+    <section id="topico-5" class="bg-dark-800 rounded-2xl border border-dark-600 mb-4 overflow-hidden">
+      <div class="divide-y divide-dark-600">
+        <div class="px-6 py-5">
+          <div class="flex items-center space-x-4">
+            <span class="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 font-bold text-lg flex items-center justify-center flex-shrink-0">5</span>
+            <div>
+              <h2 class="text-xl font-bold text-neutral-100">🎯 Quatro formas de invocar um agente</h2>
+              <p class="text-neutral-500 text-sm mt-0.5">Automático, proativo, @nome e --agent</p>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-5">
+          <!-- Box conceito -->
+          <div class="bg-gradient-to-r from-blue-900/30 to-dark-700/50 border border-blue-500/30 rounded-xl p-5 mb-4">
+            <div class="text-blue-400 font-bold text-sm mb-2">🎯 Como o Claude decide qual agente chamar</div>
+            <p class="text-neutral-300 text-sm">O Claude lê a description de todos os agentes disponíveis a cada turno. Se o seu prompt combina com a description de um agente, ele é ativado automaticamente — sem você precisar pedir. Isso é o <strong class="text-neutral-100">modo automático</strong>. Mas você pode forçar outros modos.</p>
+          </div>
+
+          <!-- Grid 4 modos -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <div class="bg-dark-700/50 border border-blue-500/20 rounded-xl p-4">
+              <div class="flex items-center space-x-2 mb-2">
+                <span class="bg-blue-500/20 text-blue-400 text-xs font-bold px-2 py-0.5 rounded">AUTO</span>
+                <span class="text-neutral-300 text-sm font-medium">Automático</span>
+              </div>
+              <p class="text-neutral-400 text-xs">Claude lê a description e ativa o agente se o contexto combinar. Você não faz nada — ele decide. Depende de uma description precisa.</p>
+            </div>
+            <div class="bg-dark-700/50 border border-blue-500/20 rounded-xl p-4">
+              <div class="flex items-center space-x-2 mb-2">
+                <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded">PROATIVO</span>
+                <span class="text-neutral-300 text-sm font-medium">Phrase-trigger</span>
+              </div>
+              <p class="text-neutral-400 text-xs">A description inclui <code class="text-blue-400">"Use proativamente quando..."</code> — o Claude verifica se deve acionar mesmo sem você pedir explicitamente, como após commits ou ao abrir um PR.</p>
+            </div>
+            <div class="bg-dark-700/50 border border-blue-500/20 rounded-xl p-4">
+              <div class="flex items-center space-x-2 mb-2">
+                <span class="bg-primary/20 text-primary text-xs font-bold px-2 py-0.5 rounded">@NOME</span>
+                <span class="text-neutral-300 text-sm font-medium">Invocação direta</span>
+              </div>
+              <p class="text-neutral-400 text-xs">Você digita <code class="text-blue-400">@plan-roaster revise isto</code>. Ativação garantida independente da description. Mais explícito — menos surpresas. Ideal ao testar um agente novo.</p>
+            </div>
+            <div class="bg-dark-700/50 border border-blue-500/20 rounded-xl p-4">
+              <div class="flex items-center space-x-2 mb-2">
+                <span class="bg-neutral-700 text-neutral-300 text-xs font-bold px-2 py-0.5 rounded">--AGENT</span>
+                <span class="text-neutral-300 text-sm font-medium">Flag de CLI</span>
+              </div>
+              <p class="text-neutral-400 text-xs">Na linha de comando: <code class="text-blue-400">claude --agent plan-roaster "revise o plano"</code>. Útil em scripts e automações onde você não está no modo interativo.</p>
+            </div>
+          </div>
+
+          <div class="border border-dark-600 rounded-xl overflow-hidden">
+            <button onclick="toggleTopic(this)" class="w-full px-5 py-3 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+              <span class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center flex-shrink-0">5</span>
+              <span class="text-base">🔀</span>
+              <div>
+                <span class="font-medium text-sm">Como o Claude ranqueia agentes concorrentes</span>
+                <span class="text-neutral-500 text-xs ml-2">— desempate</span>
+              </div>
+            </button>
+            <div class="topic-explanation px-5 pb-4">
+              <div class="bg-dark-700/50 rounded-lg p-4 space-y-3 ml-9">
+                <div><span class="text-blue-400 font-semibold text-sm">O que é:</span><p class="text-neutral-300 text-sm mt-1">Quando dois agentes têm descriptions que combinam com o mesmo prompt, o Claude usa o contexto completo da conversa para decidir qual é mais específico. Agentes de projeto têm precedência sobre global com o mesmo nome.</p></div>
+                <div><span class="text-blue-400 font-semibold text-sm">Por que aprender:</span><p class="text-neutral-300 text-sm mt-1">Se você tem um <code class="text-blue-400">code-reviewer</code> global e um do projeto, o do projeto sempre ganha. Isso permite customizações por projeto sem remover o global.</p></div>
+                <div><span class="text-blue-400 font-semibold text-sm">Conceitos-chave:</span><p class="text-neutral-300 text-sm mt-1">Ordem de prioridade: 1) invocação <code class="text-blue-400">@nome</code> (forçado), 2) agente de projeto (auto), 3) agente global (auto), 4) built-in. Nomes únicos eliminam o problema de concorrência.</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 6: Misfire e conserto -->
+    <section id="topico-6" class="bg-dark-800 rounded-2xl border border-dark-600 mb-4 overflow-hidden">
+      <div class="divide-y divide-dark-600">
+        <div class="px-6 py-5">
+          <div class="flex items-center space-x-4">
+            <span class="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 font-bold text-lg flex items-center justify-center flex-shrink-0">6</span>
+            <div>
+              <h2 class="text-xl font-bold text-neutral-100">🔧 Misfire e conserto</h2>
+              <p class="text-neutral-500 text-sm mt-0.5">Quando o agente dispara errado — e como corrigir</p>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-5">
+          <!-- Grid ✓/✗ diagnóstico -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <div class="bg-red-900/20 border border-red-500/30 rounded-xl p-4">
+              <div class="text-red-400 font-semibold text-sm mb-2">🚨 Sintomas de misfire</div>
+              <ul class="space-y-1.5 text-sm text-neutral-300">
+                <li>• Agente ativa em prompts que não têm nada a ver</li>
+                <li>• Dois agentes ativam ao mesmo tempo</li>
+                <li>• Agente nunca ativa — mesmo pedindo</li>
+                <li>• Agente errado ativa (colisão de description)</li>
+                <li>• Output genérico: corpo do .md não foi lido</li>
+              </ul>
+            </div>
+            <div class="bg-emerald-900/20 border border-emerald-500/30 rounded-xl p-4">
+              <div class="text-emerald-400 font-semibold text-sm mb-2">✅ Correções correspondentes</div>
+              <ul class="space-y-1.5 text-sm text-neutral-300">
+                <li>• Trime description — remova contexto desnecessário</li>
+                <li>• Renomeie ou separe descriptions com gatilhos distintos</li>
+                <li>• Adicione "Use proativamente quando [frase exata]"</li>
+                <li>• Use prefixo no nome: <code class="text-blue-400">proj-code-reviewer</code></li>
+                <li>• Enriqueça o corpo do .md com instruções detalhadas</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Tip box -->
+          <div class="bg-primary/10 border border-primary/40 rounded-xl p-4 mb-4">
+            <div class="text-primary font-semibold text-sm mb-1">💡 Diagnóstico rápido</div>
+            <p class="text-neutral-300 text-sm">Pergunte ao Claude: <em>"Por que o agente <code class="text-blue-400">plan-roaster</code> não disparou no meu último prompt?"</em> — ele vai explicar qual description leu e por que não combinou. Use essa informação para ajustar.</p>
+          </div>
+
+          <div class="border border-dark-600 rounded-xl overflow-hidden">
+            <button onclick="toggleTopic(this)" class="w-full px-5 py-3 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+              <span class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center flex-shrink-0">6</span>
+              <span class="text-base">🩺</span>
+              <div>
+                <span class="font-medium text-sm">Ciclo de iteração da description</span>
+                <span class="text-neutral-500 text-xs ml-2">— testar, medir, ajustar</span>
+              </div>
+            </button>
+            <div class="topic-explanation px-5 pb-4">
+              <div class="bg-dark-700/50 rounded-lg p-4 space-y-3 ml-9">
+                <div><span class="text-blue-400 font-semibold text-sm">O que é:</span><p class="text-neutral-300 text-sm mt-1">A description raramente fica perfeita na primeira vez. O ciclo é: escrever → testar com 5+ prompts variados → observar quando dispara e quando não → ajustar a description → repetir.</p></div>
+                <div><span class="text-blue-400 font-semibold text-sm">Por que aprender:</span><p class="text-neutral-300 text-sm mt-1">Agentes de produção que disparam errado podem consumir tokens desnecessariamente ou interferir no fluxo de trabalho. Iterar a description é o principal custo de manutenção de um agente.</p></div>
+                <div><span class="text-blue-400 font-semibold text-sm">Conceitos-chave:</span><p class="text-neutral-300 text-sm mt-1">Teste de 5 prompts: 2 que devem acionar, 2 que não devem, 1 borda. Se a taxa de acerto é 4/5 ou melhor, a description está boa. Abaixo disso, itere.</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 7: Trim da description gerada -->
+    <section id="topico-7" class="bg-dark-800 rounded-2xl border border-dark-600 mb-4 overflow-hidden">
+      <div class="divide-y divide-dark-600">
+        <div class="px-6 py-5">
+          <div class="flex items-center space-x-4">
+            <span class="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 font-bold text-lg flex items-center justify-center flex-shrink-0">7</span>
+            <div>
+              <h2 class="text-xl font-bold text-neutral-100">✂️ Trimando a description gerada</h2>
+              <p class="text-neutral-500 text-sm mt-0.5">A arte do corte preciso — progressive disclosure</p>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-5">
+          <!-- Box dados/pesquisa -->
+          <div class="bg-blue-900/20 border border-blue-500/30 rounded-xl p-4 mb-4">
+            <div class="text-blue-400 font-bold text-sm mb-2">📊 Por que o Claude corta na description</div>
+            <p class="text-neutral-300 text-sm">O Claude Code usa as descriptions de todos os agentes disponíveis como parte do contexto de decisão a cada turno. Descriptions longas consomem mais tokens nessa janela de seleção — e ambiguidade semântica nelas gera misfires. A description otimizada é aquela que passa no teste de 5 prompts com o mínimo de palavras.</p>
+          </div>
+
+          <!-- Antes/depois da description -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <div class="bg-red-900/20 border border-red-500/30 rounded-xl p-4">
+              <div class="text-red-400 font-semibold text-sm mb-2">✗ Antes do trim (gerada pelo Claude)</div>
+              <p class="text-neutral-400 text-xs font-mono leading-relaxed">"Este agente especializado em revisão crítica de planos de implementação foi projetado para analisar documentos de planejamento técnico e estratégico, identificando lacunas, pontos cegos, riscos não considerados, dependências ocultas e alternativas mais eficientes. Atua como um engenheiro sênior cético..."</p>
+            </div>
+            <div class="bg-emerald-900/20 border border-emerald-500/30 rounded-xl p-4">
+              <div class="text-emerald-400 font-semibold text-sm mb-2">✓ Depois do trim (cirúrgica)</div>
+              <p class="text-neutral-400 text-xs font-mono leading-relaxed">"Use proativamente quando o usuário apresentar um plano, spec ou documento de implementação para revisão. Revisa criticamente como um engenheiro sênior cético: aponta pontos cegos, riscos e alternativas."</p>
+            </div>
+          </div>
+
+          <div class="border border-dark-600 rounded-xl overflow-hidden">
+            <button onclick="toggleTopic(this)" class="w-full px-5 py-3 flex items-center space-x-3 hover:bg-dark-700/50 transition-colors text-left">
+              <span class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center flex-shrink-0">7</span>
+              <span class="text-base">🎯</span>
+              <div>
+                <span class="font-medium text-sm">A fórmula da description enxuta</span>
+                <span class="text-neutral-500 text-xs ml-2">— template para copiar</span>
+              </div>
+            </button>
+            <div class="topic-explanation px-5 pb-4">
+              <div class="bg-dark-700/50 rounded-lg p-4 space-y-3 ml-9">
+                <div><span class="text-blue-400 font-semibold text-sm">O que é:</span><p class="text-neutral-300 text-sm mt-1">A fórmula de 3 partes: (1) gatilho explícito com "Use [quando/proativamente quando]...", (2) o que faz em 1 frase ativa, (3) opcionalmente, exemplos de trigger como hint semântico.</p></div>
+                <div><span class="text-blue-400 font-semibold text-sm">Por que aprender:</span><p class="text-neutral-300 text-sm mt-1">Descriptions seguindo essa fórmula têm taxa de misfire próxima de zero em testes empíricos. O "Use quando" ancora o Claude na intenção correta antes de qualquer ambiguidade semântica.</p></div>
+                <div><span class="text-blue-400 font-semibold text-sm">Conceitos-chave:</span><p class="text-neutral-300 text-sm mt-1">Template: <code class="text-blue-400">"Use proativamente quando [trigger]. [O que faz]. [Hint adicional opcional]."</code> — 2-3 frases no máximo. Todo o contexto operacional vai no corpo do <code class="text-blue-400">.md</code>.</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXEMPLO REAL: plan-roaster.md -->
+    <section class="bg-dark-800 rounded-2xl border border-dark-600 mb-4 overflow-hidden">
+      <div class="px-6 py-5 border-b border-dark-600">
+        <h2 class="text-lg font-bold text-neutral-100 flex items-center space-x-2">
+          <span>📄</span>
+          <span>Exemplo real: <code class="text-blue-400">plan-roaster.md</code></span>
+        </h2>
+        <p class="text-neutral-500 text-sm mt-1">Arquivo completo — description trimada, corpo rico, tools mínimas</p>
+      </div>
+      <div class="px-6 py-5">
+        <div class="bg-dark-900 rounded-xl border border-dark-600 p-5 font-mono text-sm overflow-x-auto">
+          <div class="text-neutral-500 text-xs mb-3"><!-- .claude/agents/plan-roaster.md --></div>
+          <pre class="text-neutral-300 leading-relaxed"><span class="text-blue-400">---</span>
+<span class="text-emerald-400">name</span>: plan-roaster
+<span class="text-emerald-400">description</span>: <span class="text-yellow-300">"Use proativamente quando o usuário
+  apresentar um plano, spec ou documento de
+  implementação. Revisa criticamente: aponta
+  pontos cegos, riscos e alternativas melhores."</span>
+<span class="text-emerald-400">tools</span>: [Read]
+<span class="text-emerald-400">model</span>: claude-sonnet-4-5
+<span class="text-emerald-400">color</span>: red
+<span class="text-blue-400">---</span>
+
+<span class="text-neutral-100"># Revisor de Planos (plan-roaster)</span>
+
+Você é um engenheiro sênior cético. Sua função é
+revisar planos de implementação com ceticismo
+construtivo. Nunca valide sem questionar.
+
+<span class="text-neutral-100">## Protocolo de revisão</span>
+
+1. Leia o plano completo antes de comentar
+2. Identifique as 3 maiores lacunas ou riscos
+3. Para cada risco, sugira uma mitigação concreta
+4. Aponte dependências implícitas não declaradas
+5. Questione os pressupostos de tempo/custo
+6. Conclua com um veredito: Aprovar / Revisar / Rejeitar
+
+<span class="text-neutral-100">## Tom</span>
+
+Direto, sem rodeios. Sem elogios desnecessários.
+Use listas numeradas. Máximo 400 palavras no output.</pre>
+        </div>
+        <div class="mt-3 bg-primary/10 border border-primary/40 rounded-xl p-4">
+          <div class="text-primary font-semibold text-sm mb-1">💡 O que este exemplo demonstra</div>
+          <ul class="text-neutral-300 text-sm space-y-1">
+            <li>• Description trimada para 3 frases com gatilho explícito</li>
+            <li>• <code class="text-blue-400">tools: [Read]</code> — mínimo necessário (só lê, não escreve)</li>
+            <li>• Corpo rico com protocolo de 6 passos — isso é lido <em>depois</em> de ativado</li>
+            <li>• Tom definido explicitamente — evita respostas genéricas</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROMPTS PRONTOS -->
+    <section class="bg-dark-800 rounded-2xl border border-dark-600 mb-4 overflow-hidden">
+      <div class="px-6 py-5 border-b border-dark-600">
+        <h2 class="text-lg font-bold text-neutral-100 flex items-center space-x-2">
+          <span>💬</span>
+          <span>Prompts prontos</span>
+        </h2>
+        <p class="text-neutral-500 text-sm mt-1">Copy-paste e use agora</p>
+      </div>
+      <div class="px-6 py-5 space-y-3">
+        <div class="bg-dark-700/50 border border-blue-500/20 rounded-xl p-4">
+          <div class="text-blue-400 font-semibold text-xs uppercase tracking-wide mb-2">Criar via /agents</div>
+          <code class="text-neutral-300 text-sm block font-mono">/agents → Create → nome: plan-roaster → Generate with Claude → "revisor crítico de planos como engenheiro sênior cético"</code>
+        </div>
+        <div class="bg-dark-700/50 border border-blue-500/20 rounded-xl p-4">
+          <div class="text-blue-400 font-semibold text-xs uppercase tracking-wide mb-2">Invocar por nome</div>
+          <code class="text-neutral-300 text-sm block font-mono">@plan-roaster revise o plano em docs/plan.md e me dê os 3 maiores riscos</code>
+        </div>
+        <div class="bg-dark-700/50 border border-blue-500/20 rounded-xl p-4">
+          <div class="text-blue-400 font-semibold text-xs uppercase tracking-wide mb-2">Diagnosticar misfire</div>
+          <code class="text-neutral-300 text-sm block font-mono">Por que o agente plan-roaster não disparou quando eu disse "revise meu plano de migração"? O que estava na description que não combinou?</code>
+        </div>
+      </div>
+    </section>
+
+    <!-- TELA SIMULADA: wizard /agents -->
+    <section class="bg-dark-800 rounded-2xl border border-dark-600 mb-4 overflow-hidden">
+      <div class="px-6 py-5 border-b border-dark-600">
+        <h2 class="text-lg font-bold text-neutral-100 flex items-center space-x-2">
+          <span>🖥️</span>
+          <span>Tela simulada: wizard <code class="text-blue-400">/agents</code></span>
+        </h2>
+        <p class="text-neutral-500 text-sm mt-1 italic">Recriação ilustrativa — não é screenshot real</p>
+      </div>
+      <div class="px-6 py-5">
+        <div class="bg-dark-900 rounded-xl border border-dark-600 overflow-hidden font-mono text-sm">
+          <!-- Barra de título -->
+          <div class="bg-dark-700 px-4 py-2 flex items-center space-x-2 border-b border-dark-600">
+            <div class="w-3 h-3 rounded-full bg-red-500 opacity-80"></div>
+            <div class="w-3 h-3 rounded-full bg-yellow-500 opacity-80"></div>
+            <div class="w-3 h-3 rounded-full bg-emerald-500 opacity-80"></div>
+            <span class="text-neutral-500 text-xs ml-3">claude-code — /agents wizard</span>
+          </div>
+          <!-- Conteúdo do terminal -->
+          <div class="p-5 space-y-3">
+            <div class="text-neutral-500">$ <span class="text-neutral-300">/agents</span></div>
+            <div class="text-neutral-400 text-xs">Agentes disponíveis (3 projeto · 1 global):</div>
+            <div class="space-y-1 ml-2">
+              <div class="flex items-center space-x-3">
+                <span class="w-2 h-2 rounded-full bg-red-400 flex-shrink-0"></span>
+                <span class="text-blue-400">plan-roaster</span>
+                <span class="text-neutral-500 text-xs">projeto · sonnet · [Read]</span>
+              </div>
+              <div class="flex items-center space-x-3">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                <span class="text-emerald-400">code-reviewer</span>
+                <span class="text-neutral-500 text-xs">projeto · sonnet · [Read,Bash]</span>
+              </div>
+              <div class="flex items-center space-x-3">
+                <span class="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0"></span>
+                <span class="text-blue-400">doc-writer</span>
+                <span class="text-neutral-500 text-xs">global · haiku · [Read,Write]</span>
+              </div>
+            </div>
+            <div class="border-t border-dark-600 pt-3">
+              <div class="text-neutral-400 text-xs mb-2">Ações:</div>
+              <div class="space-y-1 ml-2 text-xs">
+                <div><span class="text-blue-400">[c]</span> <span class="text-neutral-300">Criar novo agente</span></div>
+                <div><span class="text-blue-400">[e]</span> <span class="text-neutral-300">Editar agente existente</span></div>
+                <div><span class="text-blue-400">[d]</span> <span class="text-neutral-300">Ver detalhes</span></div>
+                <div><span class="text-blue-400">[q]</span> <span class="text-neutral-300">Sair</span></div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2 mt-2">
+              <span class="text-blue-400">›</span>
+              <span class="text-neutral-300">c</span>
+              <span class="text-neutral-500 text-xs animate-pulse">█</span>
+            </div>
+            <div class="border-t border-dark-600 pt-3 space-y-2">
+              <div class="text-neutral-400 text-xs">── Criar novo agente ──</div>
+              <div class="flex items-center space-x-2">
+                <span class="text-neutral-500 text-xs w-24">Nome:</span>
+                <span class="text-emerald-400 text-xs">plan-roaster</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="text-neutral-500 text-xs w-24">Gerar com Claude?</span>
+                <span class="text-blue-400 text-xs">[y] Sim  [n] Manual</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="text-neutral-500 text-xs w-24">Descreva o objetivo:</span>
+                <span class="text-neutral-300 text-xs">revisor crítico de planos como engenheiro sênior...</span>
+              </div>
+              <div class="text-emerald-400 text-xs">✓ Arquivo criado: .claude/agents/plan-roaster.md</div>
+              <div class="text-yellow-400 text-xs">⚠ Dica: trime a description antes de usar em produção</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXERCÍCIO -->
+    <section class="bg-dark-800 rounded-2xl border border-dark-600 mb-4 overflow-hidden">
+      <div class="px-6 py-5 border-b border-dark-600">
+        <h2 class="text-lg font-bold text-neutral-100 flex items-center space-x-2">
+          <span>🏋️</span>
+          <span>Exercício: crie e invoque um agente por nome</span>
+        </h2>
+      </div>
+      <div class="px-6 py-5">
+        <div class="bg-gradient-to-r from-blue-900/30 to-dark-700/50 border border-blue-500/30 rounded-xl p-5 mb-5">
+          <div class="text-blue-400 font-bold text-sm mb-3">📋 Tarefa</div>
+          <ol class="space-y-2 text-neutral-300 text-sm">
+            <li class="flex items-start space-x-2"><span class="text-blue-400 font-bold mt-0.5">1.</span><span>Abra o Claude Code no seu projeto e rode <code class="text-blue-400">/agents</code> — anote quantos agentes já existem.</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 font-bold mt-0.5">2.</span><span>Crie um agente chamado <code class="text-blue-400">bug-hunter</code> usando "Generate with Claude" com o objetivo: "agente que analisa código e encontra bugs potenciais antes de um PR".</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 font-bold mt-0.5">3.</span><span>Abra o <code class="text-blue-400">.md</code> gerado e trime a description para no máximo 3 frases usando a fórmula do tópico 7.</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 font-bold mt-0.5">4.</span><span>Invoque por nome: <code class="text-blue-400">@bug-hunter analise o arquivo main.py e me dê os 3 maiores riscos</code>.</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 font-bold mt-0.5">5.</span><span>Teste 3 prompts que NÃO deveriam ativar o agente e confirme que ele não dispara.</span></li>
+          </ol>
+        </div>
+
+        <div class="bg-dark-700/50 border border-dark-600 rounded-xl p-5">
+          <div class="text-neutral-300 font-semibold text-sm mb-3">✅ Critério de verificação — como saber que acertou</div>
+          <div class="space-y-2">
+            <div class="flex items-start space-x-3">
+              <span class="text-emerald-400 mt-0.5">✓</span>
+              <span class="text-neutral-400 text-sm">O arquivo <code class="text-blue-400">.claude/agents/bug-hunter.md</code> existe no projeto</span>
+            </div>
+            <div class="flex items-start space-x-3">
+              <span class="text-emerald-400 mt-0.5">✓</span>
+              <span class="text-neutral-400 text-sm">A description tem no máximo 3 frases com "Use quando" como abertura</span>
+            </div>
+            <div class="flex items-start space-x-3">
+              <span class="text-emerald-400 mt-0.5">✓</span>
+              <span class="text-neutral-400 text-sm"><code class="text-blue-400">@bug-hunter</code> retorna uma análise estruturada com bugs enumerados</span>
+            </div>
+            <div class="flex items-start space-x-3">
+              <span class="text-emerald-400 mt-0.5">✓</span>
+              <span class="text-neutral-400 text-sm">Prompts não-relacionados (ex.: "escreva um README") não ativam o agente automaticamente</span>
+            </div>
+            <div class="flex items-start space-x-3">
+              <span class="text-emerald-400 mt-0.5">✓</span>
+              <span class="text-neutral-400 text-sm">Você consegue identificar a diferença entre output gerado com e sem o corpo do <code class="text-blue-400">.md</code> preenchido</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESUMO DO MÓDULO -->
+    <section class="bg-dark-800 rounded-2xl border border-dark-600 mb-4 overflow-hidden">
+      <div class="px-6 py-5 border-b border-dark-600">
+        <h2 class="text-lg font-bold text-neutral-100">📚 Resumo do módulo</h2>
+      </div>
+      <div class="px-6 py-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+          <div class="flex items-start space-x-3">
+            <span class="text-blue-400 mt-0.5">✓</span>
+            <span class="text-neutral-300 text-sm"><code class="text-blue-400">/agents</code> é o painel completo — lista, cria e edita agentes</span>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-blue-400 mt-0.5">✓</span>
+            <span class="text-neutral-300 text-sm">Generate-with-Claude cria rápido, mas exige trim da description</span>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-blue-400 mt-0.5">✓</span>
+            <span class="text-neutral-300 text-sm">As 4 decisões do wizard: tools, model, color, memory</span>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-blue-400 mt-0.5">✓</span>
+            <span class="text-neutral-300 text-sm">plan-roaster: description cirúrgica + corpo rico + tools mínimas</span>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-blue-400 mt-0.5">✓</span>
+            <span class="text-neutral-300 text-sm">4 modos: auto / proativo / @nome / --agent</span>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-blue-400 mt-0.5">✓</span>
+            <span class="text-neutral-300 text-sm">Misfire = description longa ou ambígua → trime e re-teste</span>
+          </div>
+          <div class="flex items-start space-x-3">
+            <span class="text-blue-400 mt-0.5">✓</span>
+            <span class="text-neutral-300 text-sm">Fórmula: "Use quando [trigger]. [O que faz]. [Hint]." — 3 frases max</span>
+          </div>
+        </div>
+
+        <div class="bg-blue-900/20 border border-blue-500/30 rounded-xl p-4">
+          <div class="text-blue-400 font-semibold text-sm mb-1">🎯 Próximo passo: Trilha 3</div>
+          <p class="text-neutral-300 text-sm">Você completou a Trilha 2 — agora sabe criar agentes na prática. A Trilha 3 aprofunda <strong class="text-neutral-100">modelo, custo e orquestração</strong>: qual modelo escolher por tarefa, como encadear subagentes e medir o custo real de um sistema multiagente.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- NAVEGAÇÃO ANTERIOR / PRÓXIMO -->
+    <nav class="flex items-center justify-between pt-4 border-t border-dark-600 mt-8">
+      <a href="modulo-2-5.html" class="flex items-center space-x-2 px-4 py-2.5 bg-dark-800 border border-dark-600 rounded-xl hover:border-blue-500/30 hover:text-blue-400 transition-all text-neutral-300 text-sm">
+        <span>←</span>
+        <span>2.5 · Projeto × Global</span>
+      </a>
+      <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 text-sm transition-colors hidden sm:inline">INEMA.CLUB</a>
+      <a href="../trilha3/index.html" class="flex items-center space-x-2 px-4 py-2.5 bg-blue-500/10 border border-blue-500/30 rounded-xl hover:bg-blue-500/20 text-blue-400 transition-all text-sm font-semibold">
+        <span>Trilha 3 →</span>
+        <span>→</span>
+      </a>
+    </nav>
+
+    <!-- FOOTER -->
+    <footer class="text-center pt-8 pb-4 text-neutral-500 text-xs">
+      <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 transition-colors">INEMA.CLUB</a>
+      <span class="mx-2">·</span>
+      <span>Curso Subagentes · Trilha 2 · Módulo 2.6</span>
+    </footer>
+
+  </main>
+
+  <!-- JAVASCRIPT -->
+  <script>
+    // Toggle tópico expansível
+    function toggleTopic(btn) {
+      const explanation = btn.nextElementSibling;
+      const isActive = explanation.classList.contains('active');
+      explanation.classList.toggle('active', !isActive);
+    }
+
+    // Theme toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.classList.contains('dark');
+      html.classList.toggle('dark', !isDark);
+      document.getElementById('icon-sun').classList.toggle('hidden', isDark);
+      document.getElementById('icon-moon').classList.toggle('hidden', !isDark);
+      localStorage.setItem('theme', isDark ? 'light' : 'dark');
+    }
+
+    // Aplicar tema salvo
+    (function() {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const useDark = saved ? saved === 'dark' : prefersDark;
+      document.documentElement.classList.toggle('dark', useDark);
+      if (!useDark) {
+        document.getElementById('icon-sun').classList.remove('hidden');
+        document.getElementById('icon-moon').classList.add('hidden');
+      }
+    })();
+  </script>
+</body>
+</html>
