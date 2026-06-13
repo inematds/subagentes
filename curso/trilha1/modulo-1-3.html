@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agente × Subagente × Skill | Subagentes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#FACC15',
+            dark: { 900: '#111827', 800: '#1f2937', 700: '#374151', 600: '#4b5563' }
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .dark body { background-color: #111827; }
+    .topic-explanation { display: none; }
+    .topic-explanation.active { display: block; }
+
+    /* Light mode overrides - OBRIGATORIO (base) */
+    html:not(.dark) body { background-color: #f8fafc; }
+    html:not(.dark) .bg-dark-900 { background-color: #ffffff; }
+    html:not(.dark) .bg-dark-800 { background-color: #f9fafb; }
+    html:not(.dark) .bg-dark-700 { background-color: #f3f4f6; }
+    html:not(.dark) .bg-dark-600 { background-color: #e5e7eb; }
+    html:not(.dark) .text-neutral-100 { color: #111827; }
+    html:not(.dark) .text-neutral-300 { color: #4b5563; }
+    html:not(.dark) .text-neutral-400 { color: #6b7280; }
+    html:not(.dark) .text-neutral-500 { color: #9ca3af; }
+    html:not(.dark) .border-dark-600 { border-color: #d1d5db; }
+    html:not(.dark) .border-dark-700 { border-color: #e5e7eb; }
+
+    /* Light mode - cores de acento (trilha emerald T1) */
+    html:not(.dark) .text-emerald-400 { color: #059669; }
+    html:not(.dark) .bg-emerald-500\/20 { background-color: rgba(5, 150, 105, 0.12); }
+    html:not(.dark) .bg-emerald-500\/10 { background-color: rgba(5, 150, 105, 0.08); }
+    html:not(.dark) .border-emerald-500\/30 { border-color: rgba(5, 150, 105, 0.25); }
+    html:not(.dark) .hover\:bg-emerald-500\/30:hover { background-color: rgba(5, 150, 105, 0.18); }
+    html:not(.dark) .hover\:text-emerald-400:hover { color: #059669; }
+    html:not(.dark) .hover\:bg-emerald-500\/10:hover { background-color: rgba(5, 150, 105, 0.08); }
+
+    /* Light mode - cores de apoio (ciano subagente / blue dados / red erros / purple skill) */
+    html:not(.dark) .text-sky-300 { color: #0369a1; }
+    html:not(.dark) .text-blue-400 { color: #2563eb; }
+    html:not(.dark) .bg-blue-900\/20 { background-color: rgba(37, 99, 235, 0.08); }
+    html:not(.dark) .border-blue-500\/30 { border-color: rgba(37, 99, 235, 0.25); }
+    html:not(.dark) .text-red-400 { color: #dc2626; }
+    html:not(.dark) .bg-red-900\/20 { background-color: rgba(220, 38, 38, 0.08); }
+    html:not(.dark) .border-red-500\/30 { border-color: rgba(220, 38, 38, 0.25); }
+    html:not(.dark) .bg-emerald-900\/20 { background-color: rgba(5, 150, 105, 0.08); }
+    html:not(.dark) .text-purple-300 { color: #7c3aed; }
+    html:not(.dark) .text-purple-400 { color: #7c3aed; }
+    html:not(.dark) .bg-purple-900\/20 { background-color: rgba(124, 58, 237, 0.08); }
+    html:not(.dark) .border-purple-500\/30 { border-color: rgba(124, 58, 237, 0.25); }
+    html:not(.dark) .text-cyan-300 { color: #0e7490; }
+
+    /* Light mode - remove gradientes (fundo uniforme) */
+    html:not(.dark) [class*="bg-gradient-to"] { background-image: none !important; }
+
+    /* Light mode - cores especiais */
+    html:not(.dark) .text-primary { color: #a16207; }
+    html:not(.dark) .bg-primary\/10 { background-color: rgba(161, 98, 7, 0.08); }
+    html:not(.dark) .border-primary\/30 { border-color: rgba(161, 98, 7, 0.25); }
+    html:not(.dark) .border-primary\/40 { border-color: rgba(161, 98, 7, 0.25); }
+    html:not(.dark) .text-sky-400 { color: #0369a1; }
+    html:not(.dark) .text-yellow-400 { color: #a16207; }
+    html:not(.dark) .hover\:text-sky-300:hover { color: #0284c7; }
+    html:not(.dark) .hover\:text-yellow-300:hover { color: #854d0e; }
+
+    /* Light mode - nav */
+    html:not(.dark) .bg-dark-900\/95 { background-color: rgba(255, 255, 255, 0.95); }
+
+    /* Light mode - tabela comparativa */
+    html:not(.dark) .cmp-table th, html:not(.dark) .cmp-table td { border-color: #e5e7eb; }
+    html:not(.dark) .cmp-row-head { background-color: #f3f4f6; }
+
+    /* Light mode - diagramas SVG menos neon */
+    html:not(.dark) svg[role="img"] { filter: saturate(0.82) brightness(0.96); }
+
+    /* Dark mode - bordas e linhas divisorias mais suaves (OBRIGATORIO) */
+    .dark .border-dark-600 { border-color: #374151; }
+    .dark .divide-dark-600 > :not([hidden]) ~ :not([hidden]) { border-color: #374151; }
+
+    /* Tabela comparativa */
+    .cmp-table { border-collapse: separate; border-spacing: 0; }
+    .cmp-table th, .cmp-table td { border-bottom: 1px solid; border-color: #374151; }
+
+    /* Pulso dos agentes nos diagramas (apenas se o usuario permitir movimento) */
+    @keyframes wf-pulse { 0%,100% { opacity:.55 } 50% { opacity:1 } }
+    @keyframes wf-bar { from { transform: translateX(-6%); } to { transform: translateX(0); } }
+    @media (prefers-reduced-motion: no-preference) {
+      .wf-a { animation: wf-pulse 2.6s ease-in-out infinite; }
+      .wf-a:nth-child(2){animation-delay:.2s} .wf-a:nth-child(3){animation-delay:.4s}
+      .wf-a:nth-child(4){animation-delay:.6s} .wf-a:nth-child(5){animation-delay:.8s}
+      .barfill { animation: wf-bar 3s ease-in-out infinite alternate; }
+      .barfill.b2{animation-delay:.5s} .barfill.b3{animation-delay:1s} .barfill.b4{animation-delay:1.4s}
+    }
+  </style>
+</head>
+<body class="bg-dark-900 text-neutral-100 min-h-screen">
+
+  <!-- NAVIGATION -->
+  <nav class="sticky top-0 z-50 bg-dark-900/95 backdrop-blur-sm border-b border-dark-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-14">
+        <!-- Logo + INEMA.CLUB -->
+        <div class="flex items-center space-x-4">
+          <a href="../../index.html" class="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300">
+            <span class="text-2xl">🤖</span>
+            <span class="font-bold text-lg hidden sm:inline">Subagentes</span>
+          </a>
+          <span class="text-neutral-600">|</span>
+          <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 text-sm font-medium">INEMA.CLUB</a>
+        </div>
+
+        <!-- Trilhas + Theme Toggle -->
+        <div class="flex items-center space-x-1 sm:space-x-2">
+          <!-- Trilha 1 (ativa) -->
+          <a href="index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-emerald-400 bg-emerald-500/10">
+            <span class="sm:hidden">T1</span>
+            <span class="hidden sm:inline">Fundamentos</span>
+          </a>
+          <!-- Trilha 2 -->
+          <a href="../trilha2/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
+            <span class="sm:hidden">T2</span>
+            <span class="hidden sm:inline">Na prática</span>
+          </a>
+          <!-- Trilha 3 -->
+          <a href="../trilha3/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+            <span class="sm:hidden">T3</span>
+            <span class="hidden sm:inline">Orquestração</span>
+          </a>
+          <!-- Trilha 4 -->
+          <a href="../trilha4/index.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-neutral-400 hover:text-purple-400 hover:bg-purple-500/10 transition-colors">
+            <span class="sm:hidden">T4</span>
+            <span class="hidden sm:inline">Avançado</span>
+          </a>
+
+          <!-- Theme Toggle -->
+          <button id="theme-toggle" class="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 transition-colors ml-2">
+            <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+            </svg>
+            <svg id="theme-toggle-light-icon" class="hidden w-5 h-5 text-neutral-300" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- BREADCRUMB -->
+  <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div class="flex items-center space-x-2 text-sm text-neutral-400">
+      <a href="../../index.html" class="hover:text-emerald-400">Início</a>
+      <span>/</span>
+      <a href="index.html" class="hover:text-emerald-400">Trilha 1</a>
+      <span>/</span>
+      <span class="text-emerald-400">Módulo 1.3</span>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <header class="bg-gradient-to-br from-emerald-900/30 via-dark-800 to-dark-800 py-12 border-b border-dark-600">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <span class="inline-block px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-full mb-4">
+        MÓDULO 1.3 · Trilha 1 · Fundamentos
+      </span>
+      <h1 class="text-2xl sm:text-3xl font-bold mb-4">🧩 Agente × Subagente × Skill</h1>
+      <p class="text-lg text-neutral-400 max-w-3xl">
+        Três palavras que vivem sendo confundidas — e a confusão custa caro. Aqui você separa de vez as
+        <strong class="text-emerald-400">três primitivas</strong>: quem tem contexto próprio, quem roda em paralelo, quem escolhe
+        modelo, e <strong class="text-emerald-400">quem pode chamar quem</strong>. Este é o módulo-cabeça da trilha.
+      </p>
+
+      <!-- Stats Banner -->
+      <div class="grid grid-cols-4 gap-4 mt-8 max-w-2xl">
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-emerald-400">6</div>
+          <div class="text-xs text-neutral-400">Tópicos</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-emerald-400">~30</div>
+          <div class="text-xs text-neutral-400">Minutos</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-emerald-400">Básico</div>
+          <div class="text-xs text-neutral-400">Nível</div>
+        </div>
+        <div class="bg-dark-800/50 rounded-lg p-3 border border-dark-600">
+          <div class="text-xl font-bold text-emerald-400">Núcleo</div>
+          <div class="text-xs text-neutral-400">Tipo</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEUDO -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <!-- ABERTURA + SVG 3 CAIXAS -->
+    <section class="mb-12">
+      <p class="text-neutral-300 mb-8 leading-relaxed max-w-3xl">
+        Pense numa cozinha profissional. O <strong class="text-emerald-400">agente</strong> é o chef que fala com você o tempo todo e
+        conduz. A <strong class="text-purple-300">skill</strong> é uma receita que o chef pega da gaveta: instruções que entram
+        <em>na bancada dele</em> e guiam a próxima ação. O <strong class="text-sky-300">subagente</strong> é um cozinheiro mandado pra
+        uma cozinha separada com uma tarefa fechada — trabalha sozinho e volta só com o prato pronto. Mesmo prédio, papéis
+        diferentes; trocar um pelo outro sem querer atrasa o jantar.
+      </p>
+
+      <div class="rounded-2xl border border-emerald-500/30 bg-dark-900/40 p-3 sm:p-4 mb-2 overflow-hidden">
+        <svg viewBox="0 0 1000 270" class="w-full h-auto" role="img" aria-label="Três caixas comparando as primitivas: o agente é o chat principal com contexto compartilhado; a skill é uma instrução que entra no mesmo contexto do agente; o subagente é um trabalhador que roda em contexto próprio e separado, devolvendo só um relatório">
+          <defs>
+            <linearGradient id="m13-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#34d399"/><stop offset="1" stop-color="#10b981"/>
+            </linearGradient>
+            <filter id="m13-glow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <pattern id="m13-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+              <circle cx="1.3" cy="1.3" r="1.3" fill="#10b981" opacity="0.12"/>
+            </pattern>
+            <marker id="m13-ah" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 L2.4,4.5 Z" fill="#c084fc"/></marker>
+            <marker id="m13-ahc" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 L2.4,4.5 Z" fill="#38bdf8"/></marker>
+          </defs>
+          <rect x="0" y="0" width="1000" height="270" fill="url(#m13-grid)"/>
+
+          <!-- CAIXA 1: AGENTE -->
+          <g filter="url(#m13-glow)"><rect x="40" y="60" width="280" height="180" rx="16" fill="#0e2018" stroke="url(#m13-grad)" stroke-width="2"/></g>
+          <text x="180" y="96" text-anchor="middle" fill="#34d399" font-family="Inter,sans-serif" font-weight="600" font-size="20">Agente (chat)</text>
+          <text x="180" y="118" text-anchor="middle" fill="#9fe7c6" font-family="Inter,sans-serif" font-size="12">você fala com ele o tempo todo</text>
+          <g font-family="Inter,sans-serif" font-size="12.5">
+            <text x="68" y="152" fill="#cdeede">• contexto compartilhado</text>
+            <text x="68" y="176" fill="#cdeede">• conduz a conversa</text>
+            <text x="68" y="200" fill="#cdeede">• usa skills e dispara subagentes</text>
+            <text x="68" y="224" fill="#cdeede">• built-in ou custom (.md)</text>
+          </g>
+
+          <!-- CAIXA 2: SKILL (entra no contexto do agente) -->
+          <rect x="360" y="86" width="220" height="128" rx="14" fill="#1a1230" stroke="#c084fc" stroke-width="2"/>
+          <text x="470" y="120" text-anchor="middle" fill="#c084fc" font-family="Inter,sans-serif" font-weight="600" font-size="18">Skill</text>
+          <text x="470" y="142" text-anchor="middle" fill="#e3d2ff" font-family="Inter,sans-serif" font-size="11.5">instrução / receita</text>
+          <g font-family="Inter,sans-serif" font-size="11.5">
+            <text x="382" y="170" fill="#e3d2ff">• MESMO contexto</text>
+            <text x="382" y="190" fill="#e3d2ff">• guia a ação do agente</text>
+          </g>
+          <!-- seta: skill ENTRA no agente (mesmo contexto) -->
+          <path d="M360,150 L322,150" fill="none" stroke="#c084fc" stroke-width="1.8" opacity="0.7" marker-end="url(#m13-ah)"/>
+          <text x="341" y="140" text-anchor="middle" fill="#c084fc" font-family="Inter,sans-serif" font-size="10">entra</text>
+
+          <!-- CAIXA 3: SUBAGENTE (contexto proprio, separado) -->
+          <g filter="url(#m13-glow)"><rect x="680" y="60" width="280" height="180" rx="16" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/></g>
+          <text x="820" y="96" text-anchor="middle" fill="#7fd2ff" font-family="Inter,sans-serif" font-weight="600" font-size="20">Subagente</text>
+          <text x="820" y="118" text-anchor="middle" fill="#bfe6ff" font-family="Inter,sans-serif" font-size="12">cozinha separada, tarefa fechada</text>
+          <g font-family="Inter,sans-serif" font-size="12.5">
+            <text x="708" y="152" fill="#cfe9ff">• contexto PRÓPRIO e limpo</text>
+            <text x="708" y="176" fill="#cfe9ff">• roda em paralelo</text>
+            <text x="708" y="200" fill="#cfe9ff">• pode ter modelo próprio</text>
+            <text x="708" y="224" fill="#cfe9ff">• devolve só o relatório</text>
+          </g>
+          <!-- setas agente <-> subagente (briefing vai, relatorio volta) -->
+          <path d="M320,135 C500,135 540,135 680,135" fill="none" stroke="#38bdf8" stroke-width="1.8" opacity="0.6" marker-end="url(#m13-ahc)"/>
+          <text x="500" y="126" text-anchor="middle" fill="#38bdf8" font-family="Inter,sans-serif" font-size="11">briefing →</text>
+          <path d="M680,170 C540,170 500,170 322,170" fill="none" stroke="#34d399" stroke-width="1.8" opacity="0.6" marker-end="url(#m13-ah)"/>
+          <text x="500" y="188" text-anchor="middle" fill="#34d399" font-family="Inter,sans-serif" font-size="11">← relatório</text>
+        </svg>
+      </div>
+      <p class="text-xs text-neutral-500 mb-0">↑ As três primitivas lado a lado. Repare: a skill entra no mesmo contexto; o subagente trabalha num contexto separado e só devolve o resumo.</p>
+    </section>
+
+    <!-- DIVISOR -->
+    <h2 class="text-2xl font-bold mb-6">Conteúdo detalhado</h2>
+
+    <!-- TÓPICO 1 — As três primitivas em uma frase -->
+    <section id="topico-1" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">1</span>
+        <h2 class="text-2xl font-bold">🧩 As três primitivas em uma frase</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Antes de qualquer tabela, grave a definição de bolso de cada uma. Se você só levar isto do módulo, já vale o tempo: o
+        <strong class="text-emerald-400">agente</strong> conduz, a <strong class="text-purple-300">skill</strong> instrui, o
+        <strong class="text-sky-300">subagente</strong> executa em separado.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-emerald-900/30 to-dark-800 rounded-xl border border-emerald-500/30 p-6">
+          <div class="text-3xl mb-2">🎼</div>
+          <h4 class="font-bold text-emerald-400 mb-2">Agente</h4>
+          <p class="text-neutral-300 text-sm">O <strong>chat</strong> com que você fala. Conduz a conversa, usa skills e dispara subagentes. Pode ser <em>built-in</em> ou um <code class="text-emerald-400">.md</code> seu.</p>
+        </div>
+        <div class="bg-purple-900/20 rounded-xl border border-purple-500/30 p-6">
+          <div class="text-3xl mb-2">📜</div>
+          <h4 class="font-bold text-purple-300 mb-2">Skill</h4>
+          <p class="text-neutral-300 text-sm">Um <strong>bloco de instruções</strong> (uma receita) que entra <em>no mesmo contexto</em> do agente e guia a próxima ação. Não tem janela própria.</p>
+        </div>
+        <div class="bg-blue-900/20 rounded-xl border border-blue-500/30 p-6">
+          <div class="text-3xl mb-2">🛰️</div>
+          <h4 class="font-bold text-sky-300 mb-2">Subagente</h4>
+          <p class="text-neutral-300 text-sm">Um <strong>trabalhador</strong> acionado pelo agente, que roda numa <em>janela própria e separada</em> e devolve só um relatório.</p>
+        </div>
+      </div>
+
+      <div class="bg-primary/10 rounded-xl border border-primary/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-primary mb-3 flex items-center"><span class="mr-2">💡</span> O atalho mental que resolve 90% da confusão</h3>
+        <p class="text-neutral-300">Pergunte: <strong>"isso abre uma janela nova ou não?"</strong> Skill <strong>não abre</strong> — ela é texto que entra no contexto atual. Subagente <strong>abre</strong> — é uma sessão separada. O agente é a janela onde você já está.</p>
+      </div>
+
+      <!-- 3 SECOES OBRIGATORIAS -->
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div>
+          <span class="text-emerald-400 font-semibold">O que é:</span>
+          <p class="text-neutral-300 text-sm">a definição de bolso das três primitivas — agente (conduz), skill (instrui no mesmo contexto), subagente (executa em contexto separado).</p>
+        </div>
+        <div>
+          <span class="text-emerald-400 font-semibold">Por que aprender:</span>
+          <p class="text-neutral-300 text-sm">quase todo erro de iniciante é usar uma onde caberia outra: criar subagente pra algo que era skill, ou esperar que uma skill rode em paralelo. A frase certa evita isso.</p>
+        </div>
+        <div>
+          <span class="text-emerald-400 font-semibold">Conceitos-chave:</span>
+          <p class="text-neutral-300 text-sm">agente = chat · skill = instrução no contexto · subagente = janela própria · pergunta-filtro "abre janela nova?".</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 2 — Contexto: proprio/limpo x compartilhado -->
+    <section id="topico-2" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">2</span>
+        <h2 class="text-2xl font-bold">🪟 Contexto: próprio e limpo × compartilhado</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Esse é <strong class="text-emerald-400">o eixo que mais importa</strong>. A skill roda no
+        <strong class="text-purple-300">contexto compartilhado</strong> — tudo que ela faz e lê fica na <em>sua</em> janela, somando
+        tokens. O subagente roda num <strong class="text-sky-300">contexto próprio e limpo</strong> — ele queima quantos tokens
+        precisar lá dentro, e a sua janela só recebe o relatório no fim.
+      </p>
+
+      <!-- GRID ✓/✗ #1 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-purple-900/20 rounded-xl border border-purple-500/30 p-6">
+          <h4 class="font-bold text-purple-300 mb-4">📜 Skill — contexto compartilhado</h4>
+          <ul class="space-y-3 text-neutral-300 text-sm">
+            <li class="flex items-start space-x-2"><span class="text-purple-300">•</span><span>Tudo que ela lê e escreve fica na <strong>sua</strong> sessão</span></li>
+            <li class="flex items-start space-x-2"><span class="text-purple-300">•</span><span>Soma no seu uso de contexto (a barra sobe)</span></li>
+            <li class="flex items-start space-x-2"><span class="text-purple-300">•</span><span>Ótimo quando você <strong>quer</strong> o resultado no fluxo</span></li>
+            <li class="flex items-start space-x-2"><span class="text-purple-300">•</span><span>Ruim se a tarefa despeja muita coisa que você não relê</span></li>
+          </ul>
+        </div>
+        <div class="bg-blue-900/20 rounded-xl border border-blue-500/30 p-6">
+          <h4 class="font-bold text-sky-300 mb-4">🛰️ Subagente — contexto próprio</h4>
+          <ul class="space-y-3 text-neutral-300 text-sm">
+            <li class="flex items-start space-x-2"><span class="text-sky-300">•</span><span>Janela separada, isolada da sua conversa</span></li>
+            <li class="flex items-start space-x-2"><span class="text-sky-300">•</span><span>Pode queimar 200k tokens e <strong>não</strong> tocar a sua barra</span></li>
+            <li class="flex items-start space-x-2"><span class="text-sky-300">•</span><span>A sessão dele some quando termina (descartável)</span></li>
+            <li class="flex items-start space-x-2"><span class="text-sky-300">•</span><span>Você fica só com a conclusão, sem a sujeira</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-blue-900/20 rounded-xl border border-blue-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-blue-400 mb-3 flex items-center"><span class="mr-2">📊</span> O mesmo trabalho, dois custos de contexto</h3>
+        <p class="text-neutral-300">Imagine "leia 40 arquivos e ache o bug". Como <strong>skill</strong>, os 40 arquivos entram na sua janela — ela pode ficar pesada. Como <strong>subagente</strong>, os 40 arquivos ficam na janela dele; você recebe "está no <code class="text-emerald-400">auth.js:88</code>" e sua barra mal se move. É exatamente o motivo nº 1 dos subagentes — o tema do módulo 1.2.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-emerald-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">o eixo de contexto — skill compartilha a sua janela; subagente tem uma janela própria e limpa.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">é o critério que decide entre as duas na prática: se a saída suja seu contexto e você não vai relê-la, é subagente.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">contexto compartilhado × próprio · proteção de contexto · sessão descartável · relatório de volta.</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 3 — Paralelismo -->
+    <section id="topico-3" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">3</span>
+        <h2 class="text-2xl font-bold">⚡ Paralelismo: muitos de uma vez × um por vez</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Subagentes <strong class="text-sky-300">rodam em paralelo</strong>: o agente pode disparar cinco de uma vez, cada um na sua
+        janela, todos ao mesmo tempo. Skill <strong class="text-purple-300">não é paralela</strong> — ela é uma instrução que executa
+        no fio da sua conversa, um passo de cada vez. Querer "cinco skills ao mesmo tempo" é um sinal de que o trabalho era de
+        subagentes.
+      </p>
+
+      <!-- TIMELINE (skill = sequencial, subagente = paralelo) -->
+      <div class="space-y-6 mb-6">
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center"><span class="text-purple-300 font-bold">A</span></div>
+          <div class="flex-1 bg-dark-800 rounded-xl p-6 border border-dark-600">
+            <h4 class="font-semibold text-white mb-2">Skill: um passo, no seu fio</h4>
+            <p class="text-sm text-neutral-400 mb-3">Sequencial por natureza.</p>
+            <p class="text-neutral-300 text-sm">A skill injeta instruções e o agente age na hora, na mesma sessão. Se você tem três receitas, ele segue uma, depois a outra — não há "três ao mesmo tempo".</p>
+          </div>
+        </div>
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center"><span class="text-sky-300 font-bold">B</span></div>
+          <div class="flex-1 bg-dark-800 rounded-xl p-6 border border-dark-600">
+            <h4 class="font-semibold text-white mb-2">Subagente: muitos, lado a lado</h4>
+            <p class="text-sm text-neutral-400 mb-3">Paralelo de verdade.</p>
+            <p class="text-neutral-300 text-sm">O agente abre cinco subagentes numa tacada — revisar um texto sob cinco olhares, por exemplo. Os cinco trabalham simultaneamente; o agente dispara, recolhe e junta os cinco relatórios no fim (eles não conversam entre si — relação 1-para-1 do módulo 1.1).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-emerald-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">o eixo de paralelismo — subagentes rodam vários ao mesmo tempo; skills executam no fio da conversa.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">quando você precisa de "N coisas ao mesmo tempo", a resposta é subagente; insistir em skill aqui só serializa o trabalho.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">paralelo × sequencial · fan-out de subagentes · o agente orquestra · sem conversa lateral.</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 4 — Modelo proprio x herda -->
+    <section id="topico-4" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">4</span>
+        <h2 class="text-2xl font-bold">🎚️ Modelo: próprio × herda do agente</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Um subagente pode <strong class="text-sky-300">escolher o próprio modelo</strong> — rodar em Haiku para escanear barato, ou em
+        Opus para um raciocínio pesado — independente do modelo do agente. Uma skill <strong class="text-purple-300">não escolhe
+        modelo</strong>: ela é instrução, então roda no modelo que <em>já</em> está conduzindo a conversa. Skill sempre herda; o
+        subagente pode trocar.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-blue-900/20 rounded-xl border border-blue-500/30 p-6">
+          <h4 class="font-bold text-sky-300 mb-4">🛰️ Subagente — modelo próprio</h4>
+          <ul class="space-y-3 text-neutral-300 text-sm">
+            <li class="flex items-start space-x-2"><span class="text-sky-300">•</span><span>Define <code class="text-emerald-400">model:</code> no frontmatter dele</span></li>
+            <li class="flex items-start space-x-2"><span class="text-sky-300">•</span><span>Haiku pra varrer · Sonnet pra construir · Opus pra decidir</span></li>
+            <li class="flex items-start space-x-2"><span class="text-sky-300">•</span><span>Ou <code class="text-emerald-400">inherit</code> — herda o do agente de propósito</span></li>
+            <li class="flex items-start space-x-2"><span class="text-sky-300">•</span><span>É a base da economia (tema da Trilha 3)</span></li>
+          </ul>
+        </div>
+        <div class="bg-purple-900/20 rounded-xl border border-purple-500/30 p-6">
+          <h4 class="font-bold text-purple-300 mb-4">📜 Skill — herda, sempre</h4>
+          <ul class="space-y-3 text-neutral-300 text-sm">
+            <li class="flex items-start space-x-2"><span class="text-purple-300">•</span><span>Não tem campo de modelo — não há janela própria</span></li>
+            <li class="flex items-start space-x-2"><span class="text-purple-300">•</span><span>Roda no modelo que está na conversa naquele momento</span></li>
+            <li class="flex items-start space-x-2"><span class="text-purple-300">•</span><span>Quer outro modelo? Troque o do agente, não da skill</span></li>
+            <li class="flex items-start space-x-2"><span class="text-purple-300">•</span><span>Simplicidade: é só texto guiando a ação</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-primary/10 rounded-xl border border-primary/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-primary mb-3 flex items-center"><span class="mr-2">💡</span> Por que isso é um superpoder</h3>
+        <p class="text-neutral-300">Modelo próprio é o que deixa um <strong>agente caro</strong> (Opus) coordenar uma <strong>frota barata</strong> (Haiku): o chefe pensa, os trabalhadores executam por uma fração do custo. Skill não dá esse controle — e tudo bem, porque o trabalho dela é outro.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-emerald-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">o eixo de modelo — subagente escolhe o seu (ou herda de propósito); skill sempre roda no modelo do agente.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">controlar o modelo por subagente é o que viabiliza economia e desempenho sob medida; saber que skill não faz isso evita expectativa errada.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">modelo próprio × herdado · campo <code class="text-emerald-400">model:</code> · chefe caro + frota barata · inherit.</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 5 — Quem chama quem -->
+    <section id="topico-5" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">5</span>
+        <h2 class="text-2xl font-bold">🔀 Quem chama quem (a regra que pega todo mundo)</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Aqui está a regra mais esquecida — e a que mais quebra desenhos de orquestração. <strong class="text-emerald-400">Skill e
+        agente se chamam nos dois sentidos</strong>: o agente usa uma skill, e uma skill pode disparar um subagente. Mas um
+        <strong class="text-red-400">agente não chama outro agente</strong> direto: subagentes não invocam subagentes. Se você
+        precisa de uma sequência A→B→C, quem encadeia é o agente principal.
+      </p>
+
+      <!-- SVG quem chama quem -->
+      <div class="rounded-2xl border border-emerald-500/30 bg-dark-900/40 p-3 sm:p-4 mb-6 overflow-hidden">
+        <svg viewBox="0 0 1000 240" class="w-full h-auto" role="img" aria-label="Diagrama de chamadas: o agente chama skills e dispara subagentes; uma skill pode disparar um subagente; mas um subagente não chama outro subagente, essa seta é proibida">
+          <defs>
+            <filter id="m13b-glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <marker id="m13b-ahg" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 L2.4,4.5 Z" fill="#34d399"/></marker>
+            <marker id="m13b-ahp" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 L2.4,4.5 Z" fill="#c084fc"/></marker>
+            <marker id="m13b-ahr" markerWidth="9" markerHeight="9" refX="6.5" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 L2.4,4.5 Z" fill="#f87171"/></marker>
+          </defs>
+          <!-- AGENTE (centro-esquerda) -->
+          <g filter="url(#m13b-glow)"><rect x="40" y="92" width="150" height="58" rx="14" fill="#0e2018" stroke="#34d399" stroke-width="2.2"/></g>
+          <text x="115" y="118" text-anchor="middle" fill="#34d399" font-family="Inter,sans-serif" font-weight="600" font-size="16">Agente</text>
+          <text x="115" y="137" text-anchor="middle" fill="#9fe7c6" font-family="Inter,sans-serif" font-size="11">o chat principal</text>
+
+          <!-- SKILL (cima) -->
+          <rect x="392" y="28" width="136" height="50" rx="12" fill="#1a1230" stroke="#c084fc" stroke-width="2"/>
+          <text x="460" y="50" text-anchor="middle" fill="#c084fc" font-family="Inter,sans-serif" font-weight="600" font-size="14">Skill</text>
+          <text x="460" y="68" text-anchor="middle" fill="#e3d2ff" font-family="Inter,sans-serif" font-size="10">instrução</text>
+
+          <!-- SUBAGENTE A (baixo) -->
+          <g class="wf-a"><rect x="392" y="160" width="136" height="50" rx="12" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="460" y="182" text-anchor="middle" fill="#7fd2ff" font-family="Inter,sans-serif" font-weight="600" font-size="14">Subagente A</text><text x="460" y="200" text-anchor="middle" fill="#bfe6ff" font-family="Inter,sans-serif" font-size="10">janela própria</text></g>
+          <!-- SUBAGENTE B (baixo-direita) -->
+          <g class="wf-a"><rect x="700" y="160" width="136" height="50" rx="12" fill="#0e1b26" stroke="#38bdf8" stroke-width="2"/><text x="768" y="182" text-anchor="middle" fill="#7fd2ff" font-family="Inter,sans-serif" font-weight="600" font-size="14">Subagente B</text><text x="768" y="200" text-anchor="middle" fill="#bfe6ff" font-family="Inter,sans-serif" font-size="10">janela própria</text></g>
+
+          <!-- agente <-> skill (dois sentidos) -->
+          <path d="M190,108 C300,108 320,55 392,55" fill="none" stroke="#34d399" stroke-width="1.8" opacity="0.6" marker-end="url(#m13b-ahg)"/>
+          <path d="M392,68 C320,80 300,128 192,128" fill="none" stroke="#c084fc" stroke-width="1.8" opacity="0.6" marker-end="url(#m13b-ahp)"/>
+          <text x="300" y="78" text-anchor="middle" fill="#9fe7c6" font-family="Inter,sans-serif" font-size="10">usa ⇄ guia</text>
+          <!-- agente -> subagente A -->
+          <path d="M150,150 C260,180 300,185 392,185" fill="none" stroke="#34d399" stroke-width="1.8" opacity="0.6" marker-end="url(#m13b-ahg)"/>
+          <!-- skill -> subagente A (skill pode disparar subagente) -->
+          <path d="M460,78 L460,160" fill="none" stroke="#c084fc" stroke-width="1.8" opacity="0.6" marker-end="url(#m13b-ahp)"/>
+          <text x="502" y="124" text-anchor="middle" fill="#c9a8ff" font-family="Inter,sans-serif" font-size="10">pode disparar</text>
+          <!-- subagente A -X-> subagente B (PROIBIDO) -->
+          <path d="M528,185 L700,185" fill="none" stroke="#f87171" stroke-width="1.8" opacity="0.55" stroke-dasharray="6 6" marker-end="url(#m13b-ahr)"/>
+          <g transform="translate(614,185)">
+            <circle r="13" fill="#2a0f16" stroke="#f87171" stroke-width="2"/>
+            <path d="M-6,-6 L6,6 M6,-6 L-6,6" stroke="#f87171" stroke-width="2.2"/>
+          </g>
+          <text x="614" y="222" text-anchor="middle" fill="#f87171" font-family="Inter,sans-serif" font-size="11">subagente NÃO chama subagente</text>
+        </svg>
+      </div>
+
+      <!-- GRID ✓/✗ #2 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-emerald-900/20 rounded-xl border border-emerald-500/30 p-6">
+          <h4 class="font-bold text-emerald-400 mb-4">✓ Chamadas que acontecem</h4>
+          <ul class="space-y-3 text-neutral-300">
+            <li class="flex items-start space-x-2"><span class="text-emerald-400">✓</span><span>Agente → usa uma <strong>skill</strong></span></li>
+            <li class="flex items-start space-x-2"><span class="text-emerald-400">✓</span><span>Agente → dispara um <strong>subagente</strong></span></li>
+            <li class="flex items-start space-x-2"><span class="text-emerald-400">✓</span><span><strong>Skill</strong> → pode disparar um subagente</span></li>
+            <li class="flex items-start space-x-2"><span class="text-emerald-400">✓</span><span>Subagente → usa skills <em>dentro</em> da janela dele</span></li>
+          </ul>
+        </div>
+        <div class="bg-red-900/20 rounded-xl border border-red-500/30 p-6">
+          <h4 class="font-bold text-red-400 mb-4">✗ O que não rola</h4>
+          <ul class="space-y-3 text-neutral-300">
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Subagente A → subagente B (sem passar pelo agente)</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Dois subagentes "combinando" entre si</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Uma skill rodando "sozinha" sem um agente</span></li>
+            <li class="flex items-start space-x-2"><span class="text-red-400">✗</span><span>Você digitando direto pra um subagente</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-red-900/20 rounded-xl border border-red-500/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-red-400 mb-3 flex items-center"><span class="mr-2">⚠️</span> O erro de orquestração mais comum</h3>
+        <p class="text-neutral-300">Desenhar "o subagente de pesquisa chama o subagente de escrita, que chama o de revisão". Não funciona: <strong>quem encadeia é o agente</strong>. Ele recebe o relatório de A, decide, e só então dispara B. Subagente não é um nó que comanda outro nó — é uma folha que responde ao agente.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-emerald-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">o grafo de chamadas — skill↔agente nos dois sentidos; agente dispara subagente; subagente não dispara subagente.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">é a regra que define como orquestrar: toda sequência passa pelo agente. Ignorar isso gera desenhos que não rodam.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">skill ⇄ agente · agente → subagente · agente ⇏ agente · encadeamento via agente.</span></div>
+      </div>
+    </section>
+
+    <!-- TÓPICO 6 — Tabela canonica + onde mora + quando preferir -->
+    <section id="topico-6" class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">6</span>
+        <h2 class="text-2xl font-bold">📊 A tabela canônica: onde mora e quando preferir</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Tudo o que vimos cabe numa tabela só — a <strong class="text-emerald-400">espinha deste módulo</strong>. Guarde esta imagem:
+        ela responde, de relance, qual primitiva usar. Repare na última linha (<em>quando preferir</em>): é o que você vai consultar
+        toda vez que ficar em dúvida.
+      </p>
+
+      <!-- TABELA COMPARATIVA RICA -->
+      <div class="rounded-xl border border-dark-600 bg-dark-800 overflow-x-auto mb-6">
+        <table class="cmp-table w-full text-sm min-w-[640px]">
+          <thead>
+            <tr>
+              <th class="text-left p-4 text-neutral-400 font-semibold w-1/4">Eixo</th>
+              <th class="text-left p-4 font-bold text-emerald-400">🎼 Agente (built-in)</th>
+              <th class="text-left p-4 font-bold text-purple-300">📜 Skill</th>
+              <th class="text-left p-4 font-bold text-sky-300">🛰️ Subagente</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="p-4 font-semibold text-neutral-300 cmp-row-head">Contexto</td>
+              <td class="p-4 text-neutral-300">Compartilhado — é a janela onde você está</td>
+              <td class="p-4 text-neutral-300">Compartilhado — entra no contexto do agente</td>
+              <td class="p-4 text-neutral-300"><strong class="text-sky-300">Próprio e limpo</strong> — janela separada e descartável</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-semibold text-neutral-300 cmp-row-head">Paralelismo</td>
+              <td class="p-4 text-neutral-300">É quem orquestra os paralelos</td>
+              <td class="p-4 text-neutral-300">Não — executa no fio da conversa</td>
+              <td class="p-4 text-neutral-300"><strong class="text-sky-300">Sim</strong> — vários ao mesmo tempo</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-semibold text-neutral-300 cmp-row-head">Modelo</td>
+              <td class="p-4 text-neutral-300">O modelo da sua sessão</td>
+              <td class="p-4 text-neutral-300">Herda — roda no modelo do agente</td>
+              <td class="p-4 text-neutral-300"><strong class="text-sky-300">Próprio</strong> — escolhe (ou <code class="text-emerald-400">inherit</code>)</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-semibold text-neutral-300 cmp-row-head">Quem chama quem</td>
+              <td class="p-4 text-neutral-300">Usa skills · dispara subagentes · <strong class="text-red-400">não chama outro agente</strong></td>
+              <td class="p-4 text-neutral-300">Chamada pelo agente · pode disparar subagente</td>
+              <td class="p-4 text-neutral-300">Disparado pelo agente · <strong class="text-red-400">não dispara outro subagente</strong></td>
+            </tr>
+            <tr>
+              <td class="p-4 font-semibold text-neutral-300 cmp-row-head">Onde mora</td>
+              <td class="p-4 text-neutral-300">Built-in (já vem) ou <code class="text-emerald-400">.claude/agents/*.md</code></td>
+              <td class="p-4 text-neutral-300"><code class="text-emerald-400">.claude/skills/&lt;nome&gt;/SKILL.md</code></td>
+              <td class="p-4 text-neutral-300"><code class="text-emerald-400">.claude/agents/*.md</code> (projeto ou global)</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-semibold text-neutral-300 cmp-row-head">O que devolve</td>
+              <td class="p-4 text-neutral-300">A conversa contínua com você</td>
+              <td class="p-4 text-neutral-300">Ações/efeitos no fluxo atual</td>
+              <td class="p-4 text-neutral-300">Um <strong class="text-sky-300">relatório</strong> — não a sessão inteira</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-semibold text-emerald-400 cmp-row-head">Quando preferir</td>
+              <td class="p-4 text-neutral-300">Sempre presente — é o maestro do trabalho</td>
+              <td class="p-4 text-neutral-300"><strong class="text-purple-300">Padronizar um procedimento</strong> no fluxo (passos, regras, formato) que você quer ver acontecer</td>
+              <td class="p-4 text-neutral-300"><strong class="text-sky-300">Isolar trabalho pesado/paralelo</strong> cuja saída suja o contexto e você só quer a conclusão</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-neutral-500 mb-6">↑ A linha "Quando preferir" é o seu mapa de decisão: procedimento no fluxo → skill; trabalho pesado/paralelo isolado → subagente.</p>
+
+      <div class="bg-primary/10 rounded-xl border border-primary/30 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-primary mb-3 flex items-center"><span class="mr-2">💡</span> Regra de bolso final</h3>
+        <p class="text-neutral-300"><strong>Quer guiar como o agente faz algo, no seu fluxo?</strong> Skill. <strong>Quer terceirizar um trabalho pesado/paralelo e receber só o resultado?</strong> Subagente. <strong>Quer conversar e coordenar?</strong> Você já está no agente. As três se complementam — não competem.</p>
+      </div>
+
+      <div class="bg-dark-700/50 rounded-lg p-5 space-y-3">
+        <div><span class="text-emerald-400 font-semibold">O que é:</span> <span class="text-neutral-300 text-sm">a tabela canônica que cruza as três primitivas pelos eixos de contexto, paralelismo, modelo, chamadas, onde mora e quando preferir.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Por que aprender:</span> <span class="text-neutral-300 text-sm">é a referência de consulta rápida do curso inteiro — sempre que bater dúvida de "qual usar", a resposta está aqui.</span></div>
+        <div><span class="text-emerald-400 font-semibold">Conceitos-chave:</span> <span class="text-neutral-300 text-sm">tabela de decisão · onde mora (SKILL.md × agents/*.md) · procedimento no fluxo × trabalho isolado · primitivas complementares.</span></div>
+      </div>
+    </section>
+
+    <!-- BLOCO: EXEMPLO REAL (.md) — o MESMO job como skill x como subagente -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">📄</span>
+        <h2 class="text-2xl font-bold">Exemplo real: o MESMO job, como skill × como subagente</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Nada deixa a diferença tão clara quanto pegar <strong class="text-emerald-400">um único trabalho</strong> — "rodar a checklist
+        de release" — e escrevê-lo das duas formas. Repare: o conteúdo das instruções é quase igual; o que muda é
+        <strong class="text-emerald-400">onde elas rodam</strong> e <strong class="text-emerald-400">o que você recebe de volta</strong>.
+      </p>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- COMO SKILL -->
+        <div class="bg-dark-800 rounded-xl border border-purple-500/30 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs uppercase tracking-wide text-neutral-500">.claude/skills/release-check/SKILL.md</span>
+            <span class="text-xs text-purple-300">como SKILL</span>
+          </div>
+          <pre class="font-mono text-xs text-neutral-300 overflow-x-auto leading-relaxed"><code><span class="text-neutral-500">--- # frontmatter de SKILL</span>
+<span class="text-purple-300">name</span>: release-check
+<span class="text-purple-300">description</span>: Roda a checklist de release no
+  fluxo atual. Use quando o usuário disser
+  "checar release" ou "pronto pra publicar".
+<span class="text-neutral-500"># sem campo model: herda o do agente</span>
+<span class="text-neutral-500">---</span>
+
+<span class="text-neutral-500"># corpo: guia a ação do AGENTE, aqui mesmo</span>
+Ao ser acionada, no contexto atual:
+1. Conferir CHANGELOG e versão.
+2. Rodar os testes e mostrar o resultado.
+3. Listar pendências <span class="text-emerald-400">aqui na conversa</span>.
+
+<span class="text-emerald-400">Tudo acontece na janela do usuário.</span></code></pre>
+          <p class="text-neutral-400 text-xs mt-3">→ Os passos rodam <strong>no seu contexto</strong>. Você vê tudo no fluxo. Bom quando você quer acompanhar e agir junto.</p>
+        </div>
+
+        <!-- COMO SUBAGENTE -->
+        <div class="bg-dark-800 rounded-xl border border-blue-500/30 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs uppercase tracking-wide text-neutral-500">.claude/agents/release-checker.md</span>
+            <span class="text-xs text-sky-300">como SUBAGENTE</span>
+          </div>
+          <pre class="font-mono text-xs text-neutral-300 overflow-x-auto leading-relaxed"><code><span class="text-neutral-500">--- # frontmatter de SUBAGENTE</span>
+<span class="text-blue-400">name</span>: release-checker
+<span class="text-blue-400">description</span>: Roda a checklist de release numa
+  janela própria e devolve só um resumo. Use
+  pra checar release sem poluir o contexto.
+<span class="text-blue-400">tools</span>: Read, Grep, Bash    <span class="text-neutral-500"># só o necessário</span>
+<span class="text-blue-400">model</span>: haiku             <span class="text-neutral-500"># barato: é varredura</span>
+<span class="text-neutral-500">---</span>
+
+<span class="text-neutral-500"># corpo: roda na janela DELE, isolado</span>
+You are a release checker.
+1. Conferir CHANGELOG e versão.
+2. Rodar os testes.
+3. <span class="text-emerald-400">Devolver só</span>: pronto? sim/não + pendências.
+
+<span class="text-emerald-400">Reporte um resumo. Não cole logs brutos.</span></code></pre>
+          <p class="text-neutral-400 text-xs mt-3">→ Os passos rodam <strong>na janela dele</strong>. Você recebe só "pronto: não — faltam 2 testes". Bom quando a saída é grande e você não quer relê-la.</p>
+        </div>
+      </div>
+
+      <div class="bg-emerald-900/20 rounded-xl border border-emerald-500/30 p-6">
+        <h4 class="font-semibold text-emerald-400 mb-3">🔍 O que muda entre os dois arquivos</h4>
+        <p class="text-neutral-300 text-sm">Mesma lógica, três diferenças que denunciam a primitiva: a <strong>pasta</strong> (<code class="text-emerald-400">skills/&lt;nome&gt;/SKILL.md</code> × <code class="text-emerald-400">agents/&lt;nome&gt;.md</code>); os <strong>campos</strong> (a skill não tem <code class="text-emerald-400">model</code> nem <code class="text-emerald-400">tools</code>; o subagente tem os dois, porque a janela própria precisa declarar ferramentas e modelo); e a <strong>saída</strong> (skill mostra tudo no fluxo, subagente devolve um resumo e some).</p>
+      </div>
+    </section>
+
+    <!-- BLOCO: PROMPTS PRONTOS -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">⌨️</span>
+        <h2 class="text-2xl font-bold">Prompts prontos (copie e cole)</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Três prompts para você sentir a diferença na pele: um aciona uma <strong class="text-purple-300">skill</strong> (no fluxo), um
+        delega a um <strong class="text-sky-300">subagente</strong> (isolado), e um pede ao agente para
+        <strong class="text-emerald-400">escolher</strong> entre as duas — assim você ouve o raciocínio.
+      </p>
+
+      <div class="space-y-4">
+        <div class="bg-dark-800 rounded-xl border border-purple-500/30 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-purple-300">Prompt 1 — acionar uma skill (no fluxo)</span>
+            <span class="text-xs text-neutral-500">contexto compartilhado</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>Rode a checklist de release aqui mesmo, passo a passo,
+me mostrando cada item conforme for conferindo. Quero
+acompanhar no fluxo, não em separado.</code></pre>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-blue-500/30 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-sky-300">Prompt 2 — delegar a um subagente (isolado)</span>
+            <span class="text-xs text-neutral-500">contexto próprio</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>Abra um subagente pra rodar a checklist de release numa
+janela própria e me devolva só: pronto pra publicar
+(sim/não) + a lista de pendências. Não despeje os logs
+no meu contexto.</code></pre>
+        </div>
+        <div class="bg-dark-800 rounded-xl border border-emerald-500/30 p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-emerald-400">Prompt 3 — deixar o agente decidir</span>
+            <span class="text-xs text-neutral-500">skill × subagente</span>
+          </div>
+          <pre class="font-mono text-sm text-neutral-300 bg-dark-700/50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>Preciso revisar 25 arquivos atrás de senhas hardcoded.
+Isso é melhor como skill (no meu fluxo) ou como subagente
+(janela própria)? Decida e me explique em 2 linhas por que.</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOCO: TELA SIMULADA — skill no fluxo x subagente em sessao paralela -->
+    <section class="mb-16">
+      <div class="flex items-center space-x-4 mb-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">🖥️</span>
+        <h2 class="text-2xl font-bold">Tela simulada: skill no fluxo × subagente em paralelo</h2>
+      </div>
+      <p class="text-neutral-300 mb-6 leading-relaxed">
+        Lado a lado, o mesmo trabalho nos dois modos. À <strong class="text-purple-300">esquerda</strong>, a skill roda
+        <em>dentro</em> da sua sessão — você vê cada passo e a barra de contexto subindo. À <strong class="text-sky-300">direita</strong>,
+        o subagente roda numa sessão à parte — você vê só o painel dele, e o <em>seu</em> contexto mal se mexe.
+      </p>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-2">
+        <!-- ESQUERDA: SKILL NO FLUXO -->
+        <div class="rounded-xl border border-purple-500/30 bg-dark-900 overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 bg-dark-700/60 border-b border-dark-600">
+            <div class="flex items-center space-x-2"><span class="w-3 h-3 rounded-full bg-red-400/70"></span><span class="w-3 h-3 rounded-full bg-amber-400/70"></span><span class="w-3 h-3 rounded-full bg-emerald-400/70"></span></div>
+            <span class="text-xs text-neutral-400 font-mono">sua sessão · skill: release-check</span>
+            <span class="text-xs text-purple-300 font-mono">no fluxo</span>
+          </div>
+          <div class="p-4 space-y-1.5 font-mono text-xs">
+            <div class="text-emerald-400">você &gt; rode a checklist de release aqui</div>
+            <div class="text-purple-300">↳ skill release-check ativada (mesmo contexto)</div>
+            <div class="text-neutral-400">1. CHANGELOG conferido — v2.4.0 ✓</div>
+            <div class="text-neutral-400">2. testes: 142 passando, 2 falhando ✗</div>
+            <div class="text-neutral-400">3. pendências listadas abaixo…</div>
+            <div class="text-neutral-500 pt-1">— tudo isto entrou na SUA janela —</div>
+          </div>
+          <div class="flex items-center justify-between px-4 py-2 bg-dark-800 border-t border-dark-600 font-mono text-xs">
+            <span class="text-neutral-400">agente · Sonnet</span>
+            <div class="flex items-center gap-2">
+              <span class="text-neutral-500">seu contexto</span>
+              <div class="w-24 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill h-full bg-purple-400/70" style="width:58%"></div></div>
+              <span class="text-purple-300">58%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- DIREITA: SUBAGENTE EM SESSAO PARALELA -->
+        <div class="rounded-xl border border-blue-500/30 bg-dark-900 overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 bg-dark-700/60 border-b border-dark-600">
+            <div class="flex items-center space-x-2"><span class="w-3 h-3 rounded-full bg-red-400/70"></span><span class="w-3 h-3 rounded-full bg-amber-400/70"></span><span class="w-3 h-3 rounded-full bg-emerald-400/70"></span></div>
+            <span class="text-xs text-neutral-400 font-mono">subagente: release-checker</span>
+            <span class="text-xs text-sky-300 font-mono">sessão à parte</span>
+          </div>
+          <div class="p-4 space-y-1.5 font-mono text-xs">
+            <div class="text-emerald-400">você &gt; abra um subagente pra checar release</div>
+            <div class="text-sky-300">↳ subagente disparado (janela própria · Haiku)</div>
+            <div class="flex items-center gap-2"><span class="text-neutral-500 w-24 shrink-0">checando…</span><div class="flex-1 h-2 rounded bg-dark-700 overflow-hidden"><div class="barfill b2 h-full bg-sky-400/70" style="width:74%"></div></div><span class="text-neutral-400 w-16 text-right shrink-0">88k tok</span></div>
+            <div class="text-neutral-500">(os logs ficam na janela DELE)</div>
+            <div class="text-emerald-400">↳ relatório: pronto? <span class="text-red-400">não</span> — 2 testes falhando</div>
+            <div class="text-neutral-500 pt-1">— você recebeu só o resumo —</div>
+          </div>
+          <div class="flex items-center justify-between px-4 py-2 bg-dark-800 border-t border-dark-600 font-mono text-xs">
+            <span class="text-neutral-400">agente · Sonnet</span>
+            <div class="flex items-center gap-2">
+              <span class="text-neutral-500">seu contexto</span>
+              <div class="w-24 h-2 rounded bg-dark-700 overflow-hidden"><div class="h-full bg-emerald-500/70" style="width:9%"></div></div>
+              <span class="text-emerald-400">9%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-neutral-500">↑ Recriação ilustrativa (não é screenshot real). Mesmo job: a skill enche o seu contexto (58%); o subagente o preserva (9%) porque a sujeira ficou na janela dele.</p>
+    </section>
+
+    <!-- BLOCO: EXERCÍCIO — classificar 6 cenarios -->
+    <section class="mb-12">
+      <div class="bg-gradient-to-br from-emerald-900/30 to-dark-800 rounded-xl border border-emerald-500/30 p-8">
+        <div class="flex items-center space-x-4 mb-6">
+          <span class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xl">🎯</span>
+          <h2 class="text-2xl font-bold">Exercício: classifique 6 cenários</h2>
+        </div>
+        <p class="text-neutral-300 mb-6 leading-relaxed">
+          Para cada cenário abaixo, decida: é <strong class="text-purple-300">skill</strong>, <strong class="text-sky-300">subagente</strong>
+          ou simplesmente o <strong class="text-emerald-400">agente</strong> conversando? Escreva sua resposta antes de abrir o gabarito.
+        </p>
+
+        <div class="bg-dark-800/60 rounded-lg p-5 mb-6">
+          <h4 class="font-semibold text-emerald-400 mb-3">Os 6 cenários</h4>
+          <ol class="space-y-2 text-neutral-300 text-sm list-decimal list-inside">
+            <li>Padronizar <strong>como</strong> o assistente formata todo commit (mensagem, co-author, tom) — você quer ver acontecer no fluxo.</li>
+            <li>Vasculhar <strong>50 PDFs</strong> de contrato atrás de uma cláusula e receber só "achei na página X de cada".</li>
+            <li>Revisar um texto sob <strong>5 perspectivas diferentes ao mesmo tempo</strong> (iniciante, técnico, editor…).</li>
+            <li>Te ajudar a <strong>pensar em voz alta</strong> sobre qual arquitetura escolher, trocando ideias.</li>
+            <li>Sempre que você pedir "deploy", rodar uma <strong>sequência fixa de verificações</strong> no fluxo antes de prosseguir.</li>
+            <li>Rodar um <strong>verificador de segurança barato (Haiku)</strong> em 30 arquivos sem encher seu contexto.</li>
+          </ol>
+        </div>
+
+        <div class="bg-blue-900/20 rounded-xl border border-blue-500/30 p-6 mb-6">
+          <h4 class="font-semibold text-blue-400 mb-3">✅ Critério de verificação — como saber que acertou</h4>
+          <p class="text-neutral-300 text-sm mb-3">Use estas três perguntas, nesta ordem, para cada cenário:</p>
+          <ul class="space-y-2 text-neutral-300 text-sm">
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">1.</span><span><strong>Abre uma janela nova?</strong> Se a saída é pesada/paralela e você só quer a conclusão → <strong class="text-sky-300">subagente</strong>.</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">2.</span><span><strong>É um procedimento que você quer ver no fluxo?</strong> Padronizar passos/regras/formato no contexto atual → <strong class="text-purple-300">skill</strong>.</span></li>
+            <li class="flex items-start space-x-2"><span class="text-blue-400 mt-0.5">3.</span><span><strong>É conversa/coordenação?</strong> Pensar junto, decidir, trocar ideias → o <strong class="text-emerald-400">agente</strong> mesmo.</span></li>
+          </ul>
+          <p class="text-neutral-300 text-sm mt-3">Acertou se a sua justificativa cita <strong>contexto</strong> (compartilhado × próprio) e/ou <strong>paralelismo</strong> — não só o "feeling".</p>
+        </div>
+
+        <div class="bg-dark-800/60 rounded-lg p-5">
+          <h4 class="font-semibold text-emerald-400 mb-3">Gabarito comentado</h4>
+          <ul class="space-y-2 text-neutral-300 text-sm">
+            <li><strong class="text-purple-300">1 → Skill.</strong> Procedimento de formato no fluxo; você quer ver e ajustar. Mesmo contexto.</li>
+            <li><strong class="text-sky-300">2 → Subagente.</strong> 50 arquivos é leitura pesada que não pode sujar seu contexto; você quer só a conclusão.</li>
+            <li><strong class="text-sky-300">3 → Subagente (×5, em paralelo).</strong> "5 ao mesmo tempo" só existe com subagentes; cada um na sua janela.</li>
+            <li><strong class="text-emerald-400">4 → Agente.</strong> É diálogo e raciocínio com você — precisa da conversa inteira, não cabe terceirizar.</li>
+            <li><strong class="text-purple-300">5 → Skill.</strong> Sequência fixa de passos no fluxo, disparada por um gatilho ("deploy"). Contexto compartilhado.</li>
+            <li><strong class="text-sky-300">6 → Subagente (Haiku).</strong> Trabalho paralelo/barato em 30 arquivos, isolado, com modelo próprio — protege o contexto.</li>
+          </ul>
+          <p class="text-neutral-300 text-sm mt-3"><strong>Placar:</strong> 5–6 certos = você internalizou os eixos. 3–4 = revise contexto e paralelismo. 0–2 = releia a tabela do tópico 6.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESUMO / NAVEGAÇÃO -->
+    <section class="mb-12">
+      <div class="bg-gradient-to-br from-emerald-900/40 via-dark-800 to-dark-800 rounded-xl border border-emerald-500/30 p-8">
+        <h2 class="text-2xl font-bold mb-6 flex items-center"><span class="mr-3">✅</span> Resumo do módulo</h2>
+
+        <div class="space-y-4 mb-8">
+          <div class="flex items-start space-x-3"><span class="text-emerald-400 mt-1">✓</span><div><strong class="text-white">Três primitivas</strong><span class="text-neutral-400"> — agente conduz, skill instrui no contexto, subagente executa em janela separada.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-emerald-400 mt-1">✓</span><div><strong class="text-white">Contexto</strong><span class="text-neutral-400"> — skill compartilha a sua janela; subagente tem uma própria e limpa (o eixo que mais importa).</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-emerald-400 mt-1">✓</span><div><strong class="text-white">Paralelismo</strong><span class="text-neutral-400"> — subagentes rodam vários ao mesmo tempo; skill executa no fio da conversa.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-emerald-400 mt-1">✓</span><div><strong class="text-white">Modelo</strong><span class="text-neutral-400"> — subagente escolhe o próprio (ou herda); skill sempre roda no modelo do agente.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-emerald-400 mt-1">✓</span><div><strong class="text-white">Quem chama quem</strong><span class="text-neutral-400"> — skill ⇄ agente; agente → subagente; agente não chama agente.</span></div></div>
+          <div class="flex items-start space-x-3"><span class="text-emerald-400 mt-1">✓</span><div><strong class="text-white">Tabela canônica</strong><span class="text-neutral-400"> — procedimento no fluxo → skill; trabalho pesado/paralelo isolado → subagente.</span></div></div>
+        </div>
+
+        <div class="bg-dark-800/50 rounded-lg p-4 mb-8">
+          <h3 class="font-semibold text-emerald-400 mb-2">Próximo módulo:</h3>
+          <p class="text-neutral-300">1.4 — Built-in × Custom. Os subagentes que já vêm prontos × os que você cria, e por que o Claude só lê o name+description até decidir (progressive disclosure).</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="modulo-1-2.html" class="flex-1 text-center px-6 py-3 bg-dark-700 text-neutral-300 rounded-lg font-semibold hover:bg-dark-600 transition-colors">← Módulo anterior (1.2)</a>
+          <a href="index.html" class="flex-1 text-center px-6 py-3 bg-dark-700 text-neutral-300 rounded-lg font-semibold hover:bg-dark-600 transition-colors">Índice da trilha</a>
+          <a href="modulo-1-4.html" class="flex-1 text-center px-6 py-3 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-500 transition-colors">Próximo módulo (1.4) →</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-dark-600 py-8 mt-16">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-neutral-500 text-sm">
+      <p class="mb-2">Subagentes — 2026 · um curso no formato
+        <a href="https://inema.club" target="_blank" class="text-sky-400 hover:text-sky-300 font-medium">INEMA.CLUB</a>
+      </p>
+      <p>Trilha 1 · Fundamentos · Módulo 1.3</p>
+    </div>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script>
+    // Toggle de tópicos (compatível com o padrão; expansíveis ficam abertos por padrão nesta página de módulo)
+    function toggleTopic(button) {
+      const topicItem = button.closest('.topic-item');
+      if (!topicItem) return;
+      const explanation = topicItem.querySelector('.topic-explanation');
+      const moduleCard = button.closest('.bg-dark-800');
+      if (moduleCard) {
+        moduleCard.querySelectorAll('.topic-explanation.active').forEach(exp => {
+          if (exp !== explanation) exp.classList.remove('active');
+        });
+      }
+      if (explanation) explanation.classList.toggle('active');
+    }
+
+    // Theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+    const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+    const html = document.documentElement;
+
+    if (localStorage.getItem('theme') === 'light' || (!localStorage.getItem('theme') && !html.classList.contains('dark'))) {
+      themeToggleDarkIcon.classList.remove('hidden');
+      html.classList.remove('dark');
+    } else {
+      themeToggleLightIcon.classList.remove('hidden');
+    }
+
+    themeToggle.addEventListener('click', () => {
+      themeToggleDarkIcon.classList.toggle('hidden');
+      themeToggleLightIcon.classList.toggle('hidden');
+      html.classList.toggle('dark');
+      localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+    });
+  </script>
+
+</body>
+</html>
