@@ -14,4 +14,4 @@ Parte do ecossistema [INEMA.CLUB](https://inema.club).
 
 ---
 
-> 🚧 **Em construção.** Fase 0 concluída: landing + índice da Trilha 1 + módulo-piloto M1.1. Demais trilhas/módulos em produção (ver `docs/superpowers/plans/`).
+> ✅ **Curso completo.** As 4 trilhas e os 24 módulos (M1.1–M4.6) estão publicados, cada um com conteúdo detalhado, exemplo real, prompts prontos, tela simulada, exercício e critério de verificação.
